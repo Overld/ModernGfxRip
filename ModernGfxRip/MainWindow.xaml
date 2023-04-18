@@ -6,7 +6,5 @@
         xmlns:local="clr-namespace:ModernGfxRip"
         mc:Ignorable="d"
         Title="Modern Gfx Ripper" Height="600" Width="800">
-    <Grid>
-
-    </Grid>
+    <Grid/>
 </Window>

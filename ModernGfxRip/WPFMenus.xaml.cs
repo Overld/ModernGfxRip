@@ -1,0 +1,54 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using static ModernGfxRip.KeyHandlers;
+
+namespace ModernGfxRip
+{
+    /// <summary>
+    /// Interaction logic for WPFMenus.xaml
+    /// </summary>
+    public partial class WPFMenus : Window
+    {
+        public WPFMenus()
+        {
+            InitializeComponent();
+            this.DataContext = new KeyCommandsContext();
+        }
+
+        private void MenuItemExit_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+
+        private void CommandBindingNew_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        private void CommandBindingNew_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MessageBox.Show("New MenuItem Clicked.");
+        }
+
+        private void CommandBindingOpen_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        private void CommandBindingOpen_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MessageBox.Show("Open MenuItem Clicked.");
+        }
+    }
+}
