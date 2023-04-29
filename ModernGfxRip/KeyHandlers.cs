@@ -36,7 +36,11 @@ namespace ModernGfxRip
 
             public void Execute(object? parameter)
             {
-                MessageBox.Show("Set Offset!");
+                NumberEntryDialog dialog = new NumberEntryDialog("Go to BYTE:");
+                if (dialog.ShowDialog() == true)
+                {
+                    MessageBox.Show("Go to Byte = " + dialog.txtNumber.Text);
+                }
             }
         }
         public class SkipValueKey : ICommand
@@ -50,7 +54,11 @@ namespace ModernGfxRip
 
             public void Execute(object? parameter)
             {
-                MessageBox.Show("Set Skip Value!");
+                NumberEntryDialog dialog = new NumberEntryDialog("Skip Value:");
+                if (dialog.ShowDialog() == true)
+                {
+                    MessageBox.Show("Set Skip Value = " + dialog.txtNumber.Text);
+                }
             }
         }
         public class ZoomWindowKey : ICommand

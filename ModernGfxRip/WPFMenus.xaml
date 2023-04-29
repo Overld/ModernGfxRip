@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ModernGfxRip"
         mc:Ignorable="d"
-        Title="WPFMenus" Height="450" Width="800">
+        Title="Modern Graphics Ripper" Height="600" Width="800"
+        WindowStartupLocation ="CenterScreen" >
     <Window.CommandBindings>
         <CommandBinding Command="New" CanExecute="CommandBindingNew_CanExecute" Executed="CommandBindingNew_Executed"/>
         <CommandBinding Command="Open" CanExecute="CommandBindingOpen_CanExecute" Executed="CommandBindingOpen_Executed"/>
@@ -16,8 +17,8 @@
         <KeyBinding Key="H" Modifiers="" Command="{Binding SkipValueCommand}"/>
         <KeyBinding Key="U" Modifiers="" Command="{Binding ZoomWindowCommand}"/>
     </Window.InputBindings>
-    <Grid>
-        <Menu Height="20" VerticalAlignment="Top">
+    <DockPanel>
+        <Menu DockPanel.Dock ="Top" Height="20" Background="LightGray" BorderBrush ="Black">
             <MenuItem Header="_File">
                 <MenuItem Command="New" Width="150" Height="20" HorizontalAlignment="Left"/>
                 <MenuItem Command="Open" Width="150" Height="20" HorizontalAlignment="Left"/>
@@ -36,6 +37,19 @@
                 <MenuItem Command="{Binding ZoomWindowCommand}" Header="Zoom Window" InputGestureText="U" IsCheckable="True" IsChecked="True"/>
             </MenuItem>
         </Menu>
+        <ToolBar DockPanel.Dock ="Top" >
+            <Button Content ="Exit" MouseEnter ="MouseEnterExitArea"
+                    MouseLeave ="MouseLeaveArea" Click ="ToolsExit_Click"/>
+            <Separator/>
+            <Button Content ="Check" MouseEnter ="MouseEnterToolsHintsArea"
+                    MouseLeave ="MouseLeaveArea" Click ="ToolsSpellingHints_Click"
+                    Cursor="Help" />
+        </ToolBar>
+        <StatusBar DockPanel.Dock ="Bottom" VerticalAlignment="Bottom" Background="Beige" Height="30"  >
+            <StatusBarItem>
+                <TextBlock Name="statBarText">Ready</TextBlock>
+            </StatusBarItem>
+        </StatusBar>
 
-    </Grid>
+    </DockPanel>
 </Window>

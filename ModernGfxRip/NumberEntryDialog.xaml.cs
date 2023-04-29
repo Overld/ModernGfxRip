@@ -10,19 +10,25 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace ModernGfxRip
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for NumberEntryDialog.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class NumberEntryDialog : Window
     {
-        public MainWindow()
+        public NumberEntryDialog(string question)
         {
             InitializeComponent();
+
+            lblQuestion.Content = question;
+        }
+
+        private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
+        {
+            this.DialogResult = true;
         }
     }
 }

@@ -50,5 +50,29 @@ namespace ModernGfxRip
         {
             MessageBox.Show("Open MenuItem Clicked.");
         }
+
+        protected void ToolsExit_Click(object sender, RoutedEventArgs args)
+        {
+            Application.Current.Shutdown();
+        }
+
+        protected void ToolsSpellingHints_Click(object sender, RoutedEventArgs args)
+        {
+        }
+
+        protected void MouseEnterExitArea(object sender, RoutedEventArgs args)
+        {
+            statBarText.Text = "Exit the Application";
+        }
+
+        protected void MouseEnterToolsHintsArea(object sender, RoutedEventArgs args)
+        {
+            statBarText.Text = "Spelling Suggestions";
+        }
+        protected void MouseLeaveArea(object sender, RoutedEventArgs args)
+        {
+            statBarText.Text = "Ready";
+        }
+
     }
 }
