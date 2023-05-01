@@ -10,20 +10,32 @@
     <Window.CommandBindings>
         <CommandBinding Command="New" CanExecute="CommandBindingNew_CanExecute" Executed="CommandBindingNew_Executed"/>
         <CommandBinding Command="Open" CanExecute="CommandBindingOpen_CanExecute" Executed="CommandBindingOpen_Executed"/>
+        <CommandBinding Command="Save" CanExecute="CommandBindingSave_CanExecute" Executed="CommandBindingSave_Executed"/>
+        <CommandBinding Command="SaveAs" CanExecute="CommandBindingSaveAs_CanExecute" Executed="CommandBindingSaveAs_Executed"/>
     </Window.CommandBindings>
     <Window.InputBindings>
         <KeyBinding Key="Esc" Modifiers="" Command="{Binding ExitCommand}"/>
+        <KeyBinding Key="O" Modifiers="" Command="{Binding LoadCommand}"/>
         <KeyBinding Key="G" Modifiers="" Command="{Binding OffsetCommand}"/>
         <KeyBinding Key="H" Modifiers="" Command="{Binding SkipValueCommand}"/>
+        <KeyBinding Key="C" Modifiers="" Command="{Binding GetColorCommand}"/>
         <KeyBinding Key="U" Modifiers="" Command="{Binding ZoomWindowCommand}"/>
     </Window.InputBindings>
     <DockPanel>
         <Menu DockPanel.Dock ="Top" Height="20" Background="LightGray" BorderBrush ="Black">
             <MenuItem Header="_File">
-                <MenuItem Command="New" Width="150" Height="20" HorizontalAlignment="Left"/>
-                <MenuItem Command="Open" Width="150" Height="20" HorizontalAlignment="Left"/>
+                <MenuItem Command="New" />
+                <MenuItem Command="Open" />
                 <Separator/>
-                <MenuItem x:Name="MenuItemExit" Header="Exit" Click="MenuItemExit_Click" InputGestureText="Esc" Width="150" Height="20" HorizontalAlignment="Left"/>
+                <MenuItem Command="Save" />
+                <MenuItem Command="SaveAs" Header="Save As..." />
+                <Separator/>
+                <MenuItem Command="{Binding LoadCommand}" Header="Load Binary..." InputGestureText="O" />
+                <Separator/>
+                <MenuItem Command="{Binding }" Header="Save Picture(s)..." InputGestureText="P" />
+                <MenuItem Command="{Binding }" Header="Save Picture(s) with AutoIncrement..." InputGestureText="Shift+P" />
+                <Separator/>
+                <MenuItem x:Name="MenuItemExit" Header="Exit" Click="MenuItemExit_Click" InputGestureText="Esc" />
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem Command="Cut" Width="150" Height="20" HorizontalAlignment="Left"/>
@@ -34,7 +46,9 @@
                 <MenuItem Command="{Binding OffsetCommand}" Header="Set Offset..." InputGestureText="G"/>
                 <MenuItem Command="{Binding SkipValueCommand}" Header="Set Skip Value..." InputGestureText="H"/>
                 <Separator/>
-                <MenuItem Command="{Binding ZoomWindowCommand}" Header="Zoom Window" InputGestureText="U" IsCheckable="True" IsChecked="True"/>
+                <MenuItem Command="{Binding GetColorCommand}" Header="Get Color palette from BMP file..." InputGestureText="C"/>
+                <Separator/>
+                <MenuItem Command="{Binding ZoomWindowCommand}" Header="Zoom Window" InputGestureText="U" IsCheckable="True" IsChecked="False"/>
             </MenuItem>
         </Menu>
         <ToolBar DockPanel.Dock ="Top" >

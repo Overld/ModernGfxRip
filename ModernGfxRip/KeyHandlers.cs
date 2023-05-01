@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,17 @@ namespace ModernGfxRip
     {
         public class ExitKey : ICommand
         {
-            public event EventHandler? CanExecuteChanged;
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
 
             public bool CanExecute(object? parameter)
             {
@@ -25,9 +36,50 @@ namespace ModernGfxRip
             }
         }
 
+        public class LoadBinary : ICommand
+        {
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
+            public bool CanExecute(object? parameter)
+            {
+                return true;
+            }
+
+            public void Execute(object? parameter)
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Title = string.Format("Select Binary File");
+                openFileDialog.Filter = "Binary files (*.bin)|*.bin|All files (*.*)|*.*";
+                openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    MessageBox.Show("Load Binary Data from " + openFileDialog.FileName);
+                }
+            }
+        }
+
         public class OffsetKey : ICommand
         {
-            public event EventHandler? CanExecuteChanged;
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
 
             public bool CanExecute(object? parameter)
             {
@@ -45,7 +97,17 @@ namespace ModernGfxRip
         }
         public class SkipValueKey : ICommand
         {
-            public event EventHandler? CanExecuteChanged;
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
 
             public bool CanExecute(object? parameter)
             {
@@ -61,9 +123,20 @@ namespace ModernGfxRip
                 }
             }
         }
+
         public class ZoomWindowKey : ICommand
         {
-            public event EventHandler? CanExecuteChanged;
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
 
             public bool CanExecute(object? parameter)
             {
@@ -76,6 +149,37 @@ namespace ModernGfxRip
             }
         }
 
+        public class GetColorKey : ICommand
+        {
+            public event EventHandler? CanExecuteChanged {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
+
+            public bool CanExecute(Object? parameter)
+            {
+                return true;
+            }
+
+            public void Execute(Object? parameter)
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Title = string.Format("Select BMP File");
+                openFileDialog.Filter = "BMP graphic files (*.bmp)|*.bmp|All files (*.*)|*.*";
+                openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    MessageBox.Show("Get Color Palette from " + openFileDialog.FileName);
+                }
+            }
+        }
+
         public class KeyCommandsContext
         {
             public ICommand ExitCommand
@@ -83,6 +187,14 @@ namespace ModernGfxRip
                 get
                 {
                     return new ExitKey();
+                }
+            }
+
+            public ICommand LoadCommand
+            {
+                get
+                {
+                    return new LoadBinary();
                 }
             }
 
@@ -101,6 +213,14 @@ namespace ModernGfxRip
                     return new SkipValueKey();
                 }
             }
+            public ICommand GetColorCommand
+            {
+                get
+                {
+                    return new GetColorKey();
+                }
+            }
+
 
             public ICommand ZoomWindowCommand
             {

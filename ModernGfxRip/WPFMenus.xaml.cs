@@ -51,6 +51,26 @@ namespace ModernGfxRip
             MessageBox.Show("Open MenuItem Clicked.");
         }
 
+        private void CommandBindingSave_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        private void CommandBindingSave_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MessageBox.Show("Save MenuItem Clicked.");
+        }
+
+        private void CommandBindingSaveAs_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        private void CommandBindingSaveAs_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MessageBox.Show("Save As MenuItem Clicked.");
+        }
+
         protected void ToolsExit_Click(object sender, RoutedEventArgs args)
         {
             Application.Current.Shutdown();
