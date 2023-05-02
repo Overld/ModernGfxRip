@@ -5,6 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ModernGfxRip"
         mc:Ignorable="d"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
         Title="Modern Graphics Ripper" Height="600" Width="800"
         WindowStartupLocation ="CenterScreen" >
     <Window.CommandBindings>
@@ -19,6 +21,8 @@
         <KeyBinding Key="G" Modifiers="" Command="{Binding OffsetCommand}"/>
         <KeyBinding Key="H" Modifiers="" Command="{Binding SkipValueCommand}"/>
         <KeyBinding Key="C" Modifiers="" Command="{Binding GetColorCommand}"/>
+        <KeyBinding Key="P" Modifiers="" Command="{Binding SavePictureCommand}"/>
+        <KeyBinding Key="P" Modifiers="Shift" Command="{Binding SavePictureAutoIncCommand}"/>
         <KeyBinding Key="U" Modifiers="" Command="{Binding ZoomWindowCommand}"/>
     </Window.InputBindings>
     <DockPanel>
@@ -32,8 +36,8 @@
                 <Separator/>
                 <MenuItem Command="{Binding LoadCommand}" Header="Load Binary..." InputGestureText="O" />
                 <Separator/>
-                <MenuItem Command="{Binding }" Header="Save Picture(s)..." InputGestureText="P" />
-                <MenuItem Command="{Binding }" Header="Save Picture(s) with AutoIncrement..." InputGestureText="Shift+P" />
+                <MenuItem Command="{Binding SavePictureCommand}" Header="Save Picture(s)..." InputGestureText="P" />
+                <MenuItem Command="{Binding SavePictureAutoIncCommand}" Header="Save Picture(s) with AutoIncrement..." InputGestureText="Shift+P" />
                 <Separator/>
                 <MenuItem x:Name="MenuItemExit" Header="Exit" Click="MenuItemExit_Click" InputGestureText="Esc" />
             </MenuItem>
@@ -64,6 +68,7 @@
                 <TextBlock Name="statBarText">Ready</TextBlock>
             </StatusBarItem>
         </StatusBar>
+        <Canvas Width="800" Height="600"/>
 
     </DockPanel>
 </Window>

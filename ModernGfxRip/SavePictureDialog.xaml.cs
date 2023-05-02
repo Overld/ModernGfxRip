@@ -19,9 +19,18 @@ namespace ModernGfxRip
     /// </summary>
     public partial class SavePictureDialog : Window
     {
-        public SavePictureDialog()
+        public SavePictureDialog(Boolean autoIncrement)
         {
+            string baseFileName = "p.bmp";
+
             InitializeComponent();
+
+            if (autoIncrement)
+            {
+                baseFileName = "p000.bmp";
+            }
+
+            fileName.Text = baseFileName;
         }
 
         private void BtnDialogOk_Click(object sender, RoutedEventArgs e)

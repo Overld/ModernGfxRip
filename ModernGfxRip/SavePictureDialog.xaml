@@ -7,7 +7,7 @@
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize"
         WindowStyle="ToolWindow"
-        ShowInTaskbar="False"
+        ShowInTaskbar="True"
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
         Title="Save Picture(s)">

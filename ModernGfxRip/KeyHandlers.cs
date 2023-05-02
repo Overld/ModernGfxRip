@@ -13,6 +13,13 @@ namespace ModernGfxRip
     {
         public class ExitKey : ICommand
         {
+            private readonly WPFMenus menu;
+
+            public ExitKey(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
             public event EventHandler? CanExecuteChanged
             {
                 add
@@ -32,12 +39,19 @@ namespace ModernGfxRip
 
             public void Execute(object? parameter)
             {
-                Application.Current.Shutdown();
+                menu.ExitProgram();
             }
         }
 
         public class LoadBinary : ICommand
         {
+            private readonly WPFMenus menu;
+
+            public LoadBinary(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
             public event EventHandler? CanExecuteChanged
             {
                 add
@@ -49,19 +63,25 @@ namespace ModernGfxRip
                     CommandManager.RequerySuggested -= value;
                 }
             }
+
             public bool CanExecute(object? parameter)
             {
-                return true;
+                return menu.GRActive;
             }
 
             public void Execute(object? parameter)
             {
-                OpenFileDialog openFileDialog = new OpenFileDialog();
-                openFileDialog.Title = string.Format("Select Binary File");
-                openFileDialog.Filter = "Binary files (*.bin)|*.bin|All files (*.*)|*.*";
-                openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                OpenFileDialog openFileDialog = new()
+                {
+                    Title = string.Format("Select Binary File"),
+                    Filter = "Binary files (*.bin)|*.bin|All files (*.*)|*.*",
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                };
                 if (openFileDialog.ShowDialog() == true)
                 {
+                    // Binary Data has been loaded so enable all other menu options
+                    menu.BinLoaded = true;
+
                     MessageBox.Show("Load Binary Data from " + openFileDialog.FileName);
                 }
             }
@@ -69,6 +89,13 @@ namespace ModernGfxRip
 
         public class OffsetKey : ICommand
         {
+            private readonly WPFMenus menu;
+
+            public OffsetKey(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
             public event EventHandler? CanExecuteChanged
             {
                 add
@@ -83,20 +110,28 @@ namespace ModernGfxRip
 
             public bool CanExecute(object? parameter)
             {
-                return true;
+                return menu.BinLoaded;
             }
 
             public void Execute(object? parameter)
             {
-                NumberEntryDialog dialog = new NumberEntryDialog("Go to BYTE:");
+                NumberEntryDialog dialog = new("Go to BYTE:");
                 if (dialog.ShowDialog() == true)
                 {
                     MessageBox.Show("Go to Byte = " + dialog.txtNumber.Text);
                 }
             }
         }
+
         public class SkipValueKey : ICommand
         {
+            private readonly WPFMenus menu;
+
+            public SkipValueKey(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
             public event EventHandler? CanExecuteChanged
             {
                 add
@@ -111,12 +146,12 @@ namespace ModernGfxRip
 
             public bool CanExecute(object? parameter)
             {
-                return true;
+                return menu.BinLoaded;
             }
 
             public void Execute(object? parameter)
             {
-                NumberEntryDialog dialog = new NumberEntryDialog("Skip Value:");
+                NumberEntryDialog dialog = new("Skip Value:");
                 if (dialog.ShowDialog() == true)
                 {
                     MessageBox.Show("Set Skip Value = " + dialog.txtNumber.Text);
@@ -124,8 +159,15 @@ namespace ModernGfxRip
             }
         }
 
-        public class ZoomWindowKey : ICommand
+        public class SavePictureKey : ICommand
         {
+            private readonly WPFMenus menu;
+
+            public SavePictureKey(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
             public event EventHandler? CanExecuteChanged
             {
                 add
@@ -140,17 +182,127 @@ namespace ModernGfxRip
 
             public bool CanExecute(object? parameter)
             {
-                return true;
+                return menu.BinLoaded;
             }
 
             public void Execute(object? parameter)
             {
-                MessageBox.Show("Toggle Zoom Wimdow");
+                SavePictureDialog dialog = new(false);
+                if (dialog.ShowDialog() == true)
+                {
+                    string? radioButton;
+
+                    if (dialog.rb1.IsChecked== true)
+                    {
+                        radioButton = dialog.rb1.Content.ToString();
+                    } else
+                    {
+                        radioButton = dialog.rb2.Content.ToString();
+                    }
+
+                    MessageBox.Show("Save Picture Values: filename=" + dialog.fileName.Text + ", X Pics=" + dialog.xPicText.Text +
+                        ", Y Pics=" + dialog.xPicText.Text + "\nborder=" + dialog.borderText.Text + ", direction=" + radioButton +
+                        ", Color=" + dialog.colorText.Text);
+                }
+            }
+        }
+
+        public class SavePictureAutoIncKey : ICommand
+        {
+            private readonly WPFMenus menu;
+
+            public SavePictureAutoIncKey(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
+
+            public bool CanExecute(object? parameter)
+            {
+                return menu.BinLoaded;
+            }
+
+            public void Execute(object? parameter)
+            {
+                SavePictureDialog dialog = new(true);
+                if (dialog.ShowDialog() == true)
+                {
+                    string? radioButton;
+
+                    if (dialog.rb1.IsChecked == true)
+                    {
+                        radioButton = dialog.rb1.Content.ToString();
+                    }
+                    else
+                    {
+                        radioButton = dialog.rb2.Content.ToString();
+                    }
+
+                    MessageBox.Show("Save Picture Values: filename=" + dialog.fileName.Text + ", X Pics=" + dialog.xPicText.Text +
+                        ", Y Pics=" + dialog.xPicText.Text + "\nborder=" + dialog.borderText.Text + ", direction=" + radioButton +
+                        ", Color=" + dialog.colorText.Text);
+                }
+            }
+        }
+
+        public class ZoomWindowKey : ICommand
+        {
+            // Get Menus Status
+            private readonly WPFMenus menu;
+            // See if Zoom window is Active
+            private bool zoomActive;
+
+            public ZoomWindowKey(WPFMenus menu)
+            {
+                this.menu = menu;
+                this.zoomActive = false;
+            }
+
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
+
+            public bool CanExecute(object? parameter)
+            {
+                return menu.BinLoaded;
+            }
+
+            public void Execute(object? parameter)
+            {
+                this.zoomActive = !this.zoomActive;
+
+                MessageBox.Show("Toggle Zoom Wimdow: visible=" + this.zoomActive);
             }
         }
 
         public class GetColorKey : ICommand
         {
+            private readonly WPFMenus menu;
+
+            public GetColorKey(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
             public event EventHandler? CanExecuteChanged {
                 add
                 {
@@ -164,7 +316,7 @@ namespace ModernGfxRip
 
             public bool CanExecute(Object? parameter)
             {
-                return true;
+                return menu.BinLoaded;
             }
 
             public void Execute(Object? parameter)
@@ -182,11 +334,19 @@ namespace ModernGfxRip
 
         public class KeyCommandsContext
         {
+            // Access to menus
+            private readonly WPFMenus menus;
+
+            public KeyCommandsContext(WPFMenus menus)
+            {
+                this.menus = menus;
+            }
+
             public ICommand ExitCommand
             {
                 get
                 {
-                    return new ExitKey();
+                    return new ExitKey(menus);
                 }
             }
 
@@ -194,7 +354,7 @@ namespace ModernGfxRip
             {
                 get
                 {
-                    return new LoadBinary();
+                    return new LoadBinary(menus);
                 }
             }
 
@@ -202,7 +362,7 @@ namespace ModernGfxRip
             {
                 get
                 {
-                    return new OffsetKey();
+                    return new OffsetKey(menus);
                 }
             }
 
@@ -210,23 +370,39 @@ namespace ModernGfxRip
             {
                 get
                 {
-                    return new SkipValueKey();
+                    return new SkipValueKey(menus);
                 }
             }
+
             public ICommand GetColorCommand
             {
                 get
                 {
-                    return new GetColorKey();
+                    return new GetColorKey(menus);
                 }
             }
 
+            public ICommand SavePictureCommand
+            {
+                get
+                {
+                    return new SavePictureKey(menus);
+                }
+            }
+
+            public ICommand SavePictureAutoIncCommand
+            {
+                get
+                {
+                    return new SavePictureAutoIncKey(menus);
+                }
+            }
 
             public ICommand ZoomWindowCommand
             {
                 get
                 {
-                    return new ZoomWindowKey();
+                    return new ZoomWindowKey(menus);
                 }
             }
         }
