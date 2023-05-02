@@ -1,1 +1,3 @@
 # ModernGfxRip
+This is a C# Modernized Graphics Ripper designed to work with Windows 10 and Beyond.  This is based of off Version 1.08 of a tool called gfxRip written by TC (email: tomcat@sgn.net) in July 6, 2007.  This version does not use the Allegro 4.2.3 library to display the dialogs or graphics.  It relies on standard Window interfaces to do all the work.  It has been re-written in C# so that it can be rebuilt for modern interfaces, and easier to modify if additional support is needed.
+There was one other attempt to modernize the program, but that version is no longer available.  I decided to rewrite this program, and provide the source code so that others can use it in their reverse engineering efforts.  This way in the future others can add on this this program.
