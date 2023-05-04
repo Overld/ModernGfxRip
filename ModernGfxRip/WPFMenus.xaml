@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize"
-        Title="Modern Graphics Ripper" Height="600" Width="800"
+        Title="Modern Graphics Ripper"
         WindowStartupLocation ="CenterScreen" >
     <Window.CommandBindings>
         <CommandBinding Command="New" CanExecute="CommandBindingNew_CanExecute" Executed="CommandBindingNew_Executed"/>
@@ -16,6 +16,7 @@
         <CommandBinding Command="SaveAs" CanExecute="CommandBindingSaveAs_CanExecute" Executed="CommandBindingSaveAs_Executed"/>
     </Window.CommandBindings>
     <Window.InputBindings>
+        <!--  Key Equivalents for Menu Options  -->
         <KeyBinding Key="Esc" Modifiers="" Command="{Binding ExitCommand}"/>
         <KeyBinding Key="O" Modifiers="" Command="{Binding LoadCommand}"/>
         <KeyBinding Key="G" Modifiers="" Command="{Binding OffsetCommand}"/>
@@ -24,6 +25,22 @@
         <KeyBinding Key="P" Modifiers="" Command="{Binding SavePictureCommand}"/>
         <KeyBinding Key="P" Modifiers="Shift" Command="{Binding SavePictureAutoIncCommand}"/>
         <KeyBinding Key="U" Modifiers="" Command="{Binding ZoomWindowCommand}"/>
+        <!--  Key Equivalents for Toolbar Options -->
+        <KeyBinding Key="Q" Modifiers="" Command="{Binding ImageSizeCommand}" CommandParameter="+X8"/>
+        <KeyBinding Key="A" Modifiers="" Command="{Binding ImageSizeCommand}" CommandParameter="-X8"/>
+        <KeyBinding Key="W" Modifiers="" Command="{Binding ImageSizeCommand}" CommandParameter="+Y1"/>
+        <KeyBinding Key="S" Modifiers="" Command="{Binding ImageSizeCommand}" CommandParameter="-Y1"/>
+        <KeyBinding Key="W" Modifiers="Shift" Command="{Binding ImageSizeCommand}" CommandParameter="+Y8"/>
+        <KeyBinding Key="S" Modifiers="Shift" Command="{Binding ImageSizeCommand}" CommandParameter="-Y8"/>
+
+        <KeyBinding Key="Left" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="-X8"/>
+        <KeyBinding Key="Right" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="+X8"/>
+        <KeyBinding Key="Left" Modifiers="Shift" Command="{Binding PictureSizeCommand}" CommandParameter="-Pic"/>
+        <KeyBinding Key="Right" Modifiers="Shift" Command="{Binding PictureSizeCommand}" CommandParameter="+Pic"/>
+        <KeyBinding Key="Up" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="-Y1"/>
+        <KeyBinding Key="Down" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="+Y1"/>
+        <KeyBinding Key="Up" Modifiers="Shift" Command="{Binding PictureSizeCommand}" CommandParameter="-Y8"/>
+        <KeyBinding Key="Down" Modifiers="Shift" Command="{Binding PictureSizeCommand}" CommandParameter="+Y8"/>
     </Window.InputBindings>
     <DockPanel>
         <Menu DockPanel.Dock ="Top" Height="20" Background="LightGray" BorderBrush ="Black">
@@ -55,14 +72,28 @@
                 <MenuItem Command="{Binding ZoomWindowCommand}" Header="Zoom Window" InputGestureText="U" IsCheckable="True" IsChecked="False"/>
             </MenuItem>
         </Menu>
-        <ToolBar DockPanel.Dock ="Top" >
-            <Button Content ="Exit" MouseEnter ="MouseEnterExitArea"
-                    MouseLeave ="MouseLeaveArea" Click ="ToolsExit_Click"/>
-            <Separator/>
-            <Button Content ="Check" MouseEnter ="MouseEnterToolsHintsArea"
-                    MouseLeave ="MouseLeaveArea" Click ="ToolsSpellingHints_Click"
-                    Cursor="Help" />
-        </ToolBar>
+        <WrapPanel DockPanel.Dock ="Top">
+            <ToolBar>
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="+X8" Content="+XSize" ToolTip="+X Size by 8 pixels  (Q)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="-X8" Content="-XSize" ToolTip="-X Size by 8 pixels  (A)" ToolBar.OverflowMode="Never" />
+                <Separator/>
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="+Y1" Content="+YSize" ToolTip="+Y Size by 1 pixel  (W)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="-Y1" Content="-YSize" ToolTip="-Y Size by 1 pixel  (S)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="+Y8" Content="+YSize8" ToolTip="+Y Size by 8 pixels  (Shift+W)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="-Y8" Content="-YSize8" ToolTip="-Y Size by 8 pixels  (Shift+S)" ToolBar.OverflowMode="Always" />
+            </ToolBar>
+            <ToolBar>
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="-X8" Content="-XPic8" ToolTip="Picture Left by 8 pixels  (LEFT)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="+X8" Content="+XPic8" ToolTip="Picture Right by 8 pixels  (RIGHT)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="-Pic" Content="PrevPic" ToolTip="Previous Picture (Offset by X Size * Y Size)  (Shift+LEFT)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="+Pic" Content="NextPic" ToolTip="Next Picture (Offset by X Size * Y Size)  (Shift+RIGHT)" ToolBar.OverflowMode="Always" />
+                <Separator/>
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="-Y1" Content="-YPic" ToolTip="Picture Up by 1 line (Offset by X Size/8)  (UP)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="+Y1" Content="+YPic" ToolTip="Picture Down by 1 line (Offset by X Size/8)  (DOWN)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="-Y8" Content="-YPic8" ToolTip="Picture Up by 8 lines (Offset by X Size)  (Shift+UP)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="+Y8" Content="+YPic8" ToolTip="Picture Down by 8 lines (Offset by X Size)  (Shift+DOWN)" ToolBar.OverflowMode="Always" />
+            </ToolBar>
+        </WrapPanel>
         <StatusBar DockPanel.Dock ="Bottom" VerticalAlignment="Bottom" Background="Beige" Height="30"  >
             <StatusBarItem>
                 <TextBlock Name="statBarText">Ready</TextBlock>

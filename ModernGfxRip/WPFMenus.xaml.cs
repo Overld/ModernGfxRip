@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,6 +26,9 @@ namespace ModernGfxRip
         // Configuration Settings Filename
         private string gfxRipCfgName;
 
+        // GfxRip Conversion Utilities
+        private readonly GfxRip gfxRip;
+
         // Graphics Ripper Variables Configured
         public bool GRActive { set; get; }
 
@@ -34,6 +39,8 @@ namespace ModernGfxRip
         {
             InitializeComponent();
 
+            gfxRip = new GfxRip();
+
             // Initialize variables before sharing them
             GRActive = false;
             BinLoaded = false;
@@ -42,10 +49,21 @@ namespace ModernGfxRip
             gfxRipCfgName = "undefined";
 
             this.DataContext = new KeyCommandsContext(this);
+
+            // Put default text in status bar
+            statBarText.Text = "Ready";
         }
 
         public void ExitProgram()
         {
+            // Configuration has not been saved
+            // Prompt User to see if they want to save
+            if (WarnDialog() == false)
+            {
+                // Abort exiting
+                return;
+            }
+
             Application.Current.Shutdown();
         }
 
@@ -61,12 +79,20 @@ namespace ModernGfxRip
 
         private void CommandBindingNew_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            MessageBox.Show("New MenuItem Clicked.");
+            if (WarnDialog() == false)
+            {
+                // User has aborted
+                return;
+            }
 
             // GfxRip variables are now initialized
             GRActive = true;
 
             gfxRipCfgName = "undefined";
+
+            gfxRip.NewConfiguration();
+
+            UpdateStatusBar();
         }
 
         private void CommandBindingOpen_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -76,11 +102,17 @@ namespace ModernGfxRip
 
         private void CommandBindingOpen_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            if (WarnDialog() == false)
+            {
+                // User has aborted
+                return;
+            }
+
             OpenFileDialog openFileDialog = new()
             {
                 Title = string.Format("Select GfxRip Config File"),
-                Filter = "GfxRip Config files (*.cfg)|*.cfg|All files (*.*)|*.*",
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                Filter = "GfxRip Config files (*.cfg)|*.cfg|All files (*.*)|*.*"
+                // InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
             };
             if (openFileDialog.ShowDialog() == true)
             {
@@ -89,7 +121,9 @@ namespace ModernGfxRip
                 // GfxRip variables are now initialized
                 GRActive = true;
 
-                MessageBox.Show("Open GfxRip Config file from " + openFileDialog.FileName);
+                gfxRip.LoadConfiguration(openFileDialog.FileName);
+
+                UpdateStatusBar();
             }
         }
 
@@ -107,7 +141,8 @@ namespace ModernGfxRip
             }
             else
             {
-                MessageBox.Show("Save MenuItem Clicked.");
+                // Save the configuration
+                gfxRip.SaveConfiguration(gfxRipCfgName);
             }
         }
 
@@ -123,7 +158,7 @@ namespace ModernGfxRip
                 Title = string.Format("Save GfxRip Config File"),
                 DefaultExt = string.Format(".cfg"),
                 Filter = "GfxRip Config files (*.cfg)|*.cfg|All files (*.*)|*.*",
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                // InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 AddExtension = true,
                 FileName = string.Format("GfxRip")
             };
@@ -131,32 +166,73 @@ namespace ModernGfxRip
             {
                 gfxRipCfgName = saveFileDialog.FileName;
 
-                MessageBox.Show("Save As MenuItem Clicked.  Save to " + gfxRipCfgName);
+                // Save the configuration
+                gfxRip.SaveConfiguration(gfxRipCfgName);
             }
         }
 
-        protected void ToolsExit_Click(object sender, RoutedEventArgs args)
+        public void ModifyImageSize(string? command)
         {
-            ExitProgram();
+            if (BinLoaded)
+            {
+                gfxRip.AdjustImageSize(command);
+
+                UpdateStatusBar();
+            }
         }
 
-        protected void ToolsSpellingHints_Click(object sender, RoutedEventArgs args)
+        public void ModifyPictureSize(string? command)
         {
+            if (BinLoaded)
+            {
+                gfxRip.AdjustPictureSize(command);
+
+                UpdateStatusBar();
+            }
         }
 
-        protected void MouseEnterExitArea(object sender, RoutedEventArgs args)
+        /// <summary>
+        /// Displays a warning dialog to the user that the configuration file was changed, and do you want to lose your changes?
+        /// </summary>
+        /// <returns>true if user agrees to lose changes</returns>
+        protected bool WarnDialog()
         {
-            statBarText.Text = "Exit the Application";
+            bool result = true;
+
+            // Configuration is set up so check to see if User wants to override changes
+            if (GRActive)
+            {
+                // Configuration has not been saved so warn User.
+                if ((gfxRip != null) && (!gfxRip.IsSaved))
+                {
+                    // Configuration has not been saved
+                    // Prompt User to see if they want to save
+                    MessageBoxResult messageBox = MessageBox.Show("Configuration has been changed.\nDo you want to exit and lose your changes?",
+                                              "Confirmation",
+                                              MessageBoxButton.YesNo,
+                                              MessageBoxImage.Question);
+                    if (messageBox == MessageBoxResult.No)
+                    {
+                        result = false;
+                    }
+                }
+            }
+
+            return result;
         }
 
-        protected void MouseEnterToolsHintsArea(object sender, RoutedEventArgs args)
+        public bool LoadBinaryData(string filename)
         {
-            statBarText.Text = "Spelling Suggestions";
-        }
-        protected void MouseLeaveArea(object sender, RoutedEventArgs args)
-        {
-            statBarText.Text = "Ready";
+            return gfxRip.ReadBinaryData(filename);
         }
 
+        /// <summary>
+        /// Place latest Configuration values in the Status Bar
+        /// </summary>
+        protected void UpdateStatusBar()
+        {
+            // Update the Status Bar with Latest Settings
+            statBarText.Text = gfxRip.Config.DisplayValues();
+        }
     }
 }

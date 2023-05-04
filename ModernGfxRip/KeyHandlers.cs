@@ -74,15 +74,16 @@ namespace ModernGfxRip
                 OpenFileDialog openFileDialog = new()
                 {
                     Title = string.Format("Select Binary File"),
-                    Filter = "Binary files (*.bin)|*.bin|All files (*.*)|*.*",
-                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                    Filter = "Binary files (*.bin)|*.bin|All files (*.*)|*.*"
+                    // InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
                 };
                 if (openFileDialog.ShowDialog() == true)
                 {
-                    // Binary Data has been loaded so enable all other menu options
-                    menu.BinLoaded = true;
-
-                    MessageBox.Show("Load Binary Data from " + openFileDialog.FileName);
+                    if (menu.LoadBinaryData(openFileDialog.FileName))
+                    {
+                        // Binary Data has been loaded so enable all other menu options
+                        menu.BinLoaded = true;
+                    }
                 }
             }
         }
@@ -321,14 +322,79 @@ namespace ModernGfxRip
 
             public void Execute(Object? parameter)
             {
-                OpenFileDialog openFileDialog = new OpenFileDialog();
-                openFileDialog.Title = string.Format("Select BMP File");
-                openFileDialog.Filter = "BMP graphic files (*.bmp)|*.bmp|All files (*.*)|*.*";
-                openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                OpenFileDialog openFileDialog = new()
+                {
+                    Title = string.Format("Select BMP File"),
+                    Filter = "BMP graphic files (*.bmp)|*.bmp|All files (*.*)|*.*"
+                    // InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                };
                 if (openFileDialog.ShowDialog() == true)
                 {
                     MessageBox.Show("Get Color Palette from " + openFileDialog.FileName);
                 }
+            }
+        }
+
+        public class ImageSize : ICommand
+        {
+            private readonly WPFMenus menu;
+
+            public ImageSize(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
+
+            public bool CanExecute(object? parameter)
+            {
+                return menu.BinLoaded;
+            }
+
+            public void Execute(object? parameter)
+            {
+                menu.ModifyImageSize((string?) parameter);
+            }
+        }
+        public class PictureSize : ICommand
+        {
+            private readonly WPFMenus menu;
+
+            public PictureSize(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
+
+            public bool CanExecute(object? parameter)
+            {
+                return menu.BinLoaded;
+            }
+
+            public void Execute(object? parameter)
+            {
+                menu.ModifyPictureSize((string?) parameter);
             }
         }
 
@@ -403,6 +469,22 @@ namespace ModernGfxRip
                 get
                 {
                     return new ZoomWindowKey(menus);
+                }
+            }
+
+            public ICommand ImageSizeCommand
+            {
+                get
+                {
+                    return new ImageSize(menus);
+                }
+            }
+
+            public ICommand PictureSizeCommand
+            {
+                get
+                {
+                    return new PictureSize(menus);
                 }
             }
         }
