@@ -226,6 +226,44 @@ namespace ModernGfxRip
             return gfxRip.ReadBinaryData(filename);
         }
 
+        public long ConfigOffset
+        {
+            get
+            {
+                if (gfxRip != null)
+                {
+                    return gfxRip.Config.Offset;
+                }
+                return 0;
+            }
+            set
+            { 
+                if (gfxRip != null) 
+                { 
+                    gfxRip.Config.Offset = value;
+                }
+            }
+        }
+
+        public long ConfigSkip
+        {
+            get
+            {
+                if (gfxRip != null)
+                {
+                    return gfxRip.Config.Skip;
+                }
+                return 0;
+            }
+            set
+            {
+                if (gfxRip != null)
+                {
+                    gfxRip.Config.Skip = value;
+                }
+            }
+        }
+
         /// <summary>
         /// Place latest Configuration values in the Status Bar
         /// </summary>

@@ -116,10 +116,17 @@ namespace ModernGfxRip
 
             public void Execute(object? parameter)
             {
-                NumberEntryDialog dialog = new("Go to BYTE:");
+                NumberEntryDialog dialog = new("Go to BYTE:", menu.ConfigOffset);
                 if (dialog.ShowDialog() == true)
                 {
-                    MessageBox.Show("Go to Byte = " + dialog.txtNumber.Text);
+                    try
+                    {
+                        menu.ConfigOffset = Int32.Parse(dialog.txtNumber.Text);
+                    }
+                    catch (FormatException e)
+                    {
+                        throw e;
+                    }
                 }
             }
         }
@@ -152,10 +159,17 @@ namespace ModernGfxRip
 
             public void Execute(object? parameter)
             {
-                NumberEntryDialog dialog = new("Skip Value:");
+                NumberEntryDialog dialog = new("Skip Value:", menu.ConfigSkip);
                 if (dialog.ShowDialog() == true)
                 {
-                    MessageBox.Show("Set Skip Value = " + dialog.txtNumber.Text);
+                    try
+                    {
+                        menu.ConfigSkip = Int32.Parse(dialog.txtNumber.Text);
+                    }
+                    catch (FormatException e)
+                    {
+                        throw e;
+                    }
                 }
             }
         }

@@ -19,11 +19,12 @@ namespace ModernGfxRip
     /// </summary>
     public partial class NumberEntryDialog : Window
     {
-        public NumberEntryDialog(string question)
+        public NumberEntryDialog(string question, long offset)
         {
             InitializeComponent();
 
-            lblQuestion.Content = question;
+            Title = question;
+            txtNumber.Text = offset.ToString();
         }
 
         private void BtnDialogOk_Click(object sender, RoutedEventArgs e)

@@ -9,6 +9,7 @@
         WindowStyle="ToolWindow"
         ShowInTaskbar="True"
         mc:Ignorable="d"
+        Title="Go to BYTE:"
         WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
@@ -18,13 +19,11 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Label Name="lblQuestion" Grid.Column="1">Go to BYTE:</Label>
-        <TextBox Name="txtNumber" Grid.Column="1" Grid.Row="1" MinWidth="150">0</TextBox>
+        <TextBox Name="txtNumber" Grid.Column="1" Grid.Row="0" MinWidth="150">0</TextBox>
 
-        <WrapPanel Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="0,15,0,0">
+        <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="0,15,0,0">
             <Button IsDefault="True" Name="btnDialogOk" Click="BtnDialogOk_Click"  MinWidth="60" Margin="0,0,10,0">_Ok</Button>
             <Button IsCancel="True" MinWidth="60">_Cancel</Button>
         </WrapPanel>
