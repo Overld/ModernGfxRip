@@ -41,6 +41,40 @@
         <KeyBinding Key="Down" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="+Y1"/>
         <KeyBinding Key="Up" Modifiers="Shift" Command="{Binding PictureSizeCommand}" CommandParameter="-Y8"/>
         <KeyBinding Key="Down" Modifiers="Shift" Command="{Binding PictureSizeCommand}" CommandParameter="+Y8"/>
+
+        <KeyBinding Key="X" Modifiers="" Command="{Binding PalettesCommand}" CommandParameter="Skip"/>
+        <KeyBinding Key="Z" Modifiers="" Command="{Binding PalettesCommand}" CommandParameter="Pal"/>
+        <KeyBinding Key="B" Modifiers="" Command="{Binding PalettesCommand}" CommandParameter="Trans"/>
+        <KeyBinding Key="L" Modifiers="" Command="{Binding PalettesCommand}" CommandParameter="Search"/>
+        <KeyBinding Key="K" Modifiers="" Command="{Binding PalettesCommand}" CommandParameter="Standard"/>
+        <KeyBinding Key="J" Modifiers="" Command="{Binding PalettesCommand}" CommandParameter="Amiga"/>
+        <KeyBinding Key="I" Modifiers="" Command="{Binding PalettesCommand}" CommandParameter="Apple"/>
+
+        <KeyBinding Key="E" Modifiers="" Command="{Binding ImageSizeCommand}" CommandParameter="+Bit"/>
+        <KeyBinding Key="D" Modifiers="" Command="{Binding ImageSizeCommand}" CommandParameter="-Bit"/>
+        <KeyBinding Key="R" Modifiers="" Command="{Binding ImageSizeCommand}" CommandParameter="+Skip1"/>
+        <KeyBinding Key="F" Modifiers="" Command="{Binding ImageSizeCommand}" CommandParameter="-Skip1"/>
+        <KeyBinding Key="R" Modifiers="Shift" Command="{Binding ImageSizeCommand}" CommandParameter="+Skip8"/>
+        <KeyBinding Key="F" Modifiers="Shift" Command="{Binding ImageSizeCommand}" CommandParameter="-Skip8"/>
+
+        <KeyBinding Key="N" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="Normal"/>
+        <KeyBinding Key="M" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="Mode"/>
+        <KeyBinding Key="D0" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="+BP0"/>
+        <KeyBinding Key="D1" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="+BP1"/>
+        <KeyBinding Key="D2" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="+BP2"/>
+        <KeyBinding Key="D3" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="+BP3"/>
+        <KeyBinding Key="D4" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="+BP4"/>
+        <KeyBinding Key="D5" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="+BP5"/>
+        <KeyBinding Key="D6" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="+BP6"/>
+        <KeyBinding Key="D7" Modifiers="" Command="{Binding BitPlanesCommand}" CommandParameter="+BP7"/>
+        <KeyBinding Key="D0" Modifiers="Shift" Command="{Binding BitPlanesCommand}" CommandParameter="-BP0"/>
+        <KeyBinding Key="D1" Modifiers="Shift" Command="{Binding BitPlanesCommand}" CommandParameter="-BP1"/>
+        <KeyBinding Key="D2" Modifiers="Shift" Command="{Binding BitPlanesCommand}" CommandParameter="-BP2"/>
+        <KeyBinding Key="D3" Modifiers="Shift" Command="{Binding BitPlanesCommand}" CommandParameter="-BP3"/>
+        <KeyBinding Key="D4" Modifiers="Shift" Command="{Binding BitPlanesCommand}" CommandParameter="-BP4"/>
+        <KeyBinding Key="D5" Modifiers="Shift" Command="{Binding BitPlanesCommand}" CommandParameter="-BP5"/>
+        <KeyBinding Key="D6" Modifiers="Shift" Command="{Binding BitPlanesCommand}" CommandParameter="-BP6"/>
+        <KeyBinding Key="D7" Modifiers="Shift" Command="{Binding BitPlanesCommand}" CommandParameter="-BP7"/>
     </Window.InputBindings>
     <DockPanel>
         <Menu DockPanel.Dock ="Top" Height="20" Background="LightGray" BorderBrush ="Black">
@@ -69,10 +103,21 @@
                 <Separator/>
                 <MenuItem Command="{Binding GetColorCommand}" Header="Get Color palette from BMP file..." InputGestureText="C"/>
                 <Separator/>
-                <MenuItem Command="{Binding ZoomWindowCommand}" Header="Zoom Window" InputGestureText="U" IsCheckable="True" IsChecked="False"/>
+                <MenuItem x:Name="ZoomMenu" Command="{Binding ZoomWindowCommand}" Header="Zoom Window" InputGestureText="U" IsCheckable="True" IsChecked="False"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Command="Help" />
+                <Separator/>
+                <MenuItem Header="About Modern Graphics Ripper..." Click="MenuItem_Click"/>
             </MenuItem>
         </Menu>
-        <WrapPanel DockPanel.Dock ="Top">
+        <WrapPanel DockPanel.Dock ="Top" Width="800">
+            <WrapPanel.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="White" Offset="1"/>
+                    <GradientStop Color="#FF9B99F9" Offset="0"/>
+                </LinearGradientBrush>
+            </WrapPanel.Background>
             <ToolBar>
                 <Button Command="{Binding ImageSizeCommand}" CommandParameter="+X8" Content="+XSize" ToolTip="+X Size by 8 pixels  (Q)" ToolBar.OverflowMode="Never" />
                 <Button Command="{Binding ImageSizeCommand}" CommandParameter="-X8" Content="-XSize" ToolTip="-X Size by 8 pixels  (A)" ToolBar.OverflowMode="Never" />
@@ -93,13 +138,54 @@
                 <Button Command="{Binding PictureSizeCommand}" CommandParameter="-Y8" Content="-YPic8" ToolTip="Picture Up by 8 lines (Offset by X Size)  (Shift+UP)" ToolBar.OverflowMode="Always" />
                 <Button Command="{Binding PictureSizeCommand}" CommandParameter="+Y8" Content="+YPic8" ToolTip="Picture Down by 8 lines (Offset by X Size)  (Shift+DOWN)" ToolBar.OverflowMode="Always" />
             </ToolBar>
+            <ToolBar>
+                <Button Command="{Binding PalettesCommand}" CommandParameter="Skip" Content="SkipM" ToolTip="Set Skip Mode [P - Pictures , B - Bitplanes]  (X)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PalettesCommand}" CommandParameter="Pal" Content="PalM" ToolTip="Palette search mode  (Z)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PalettesCommand}" CommandParameter="Trans" Content="MagTrans" ToolTip="Set colour 0 to Magenta [255,0,255] - Transparent  (B)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PalettesCommand}" CommandParameter="Search" Content="Search" ToolTip="Search for Amiga Palette.  Press again for more  (L)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PalettesCommand}" CommandParameter="Standard" Content="RevertPal" ToolTip="Revert to standard Palette  (K)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PalettesCommand}" CommandParameter="Amiga" Content="RevertAmiga" ToolTip="Revert to last found Amiga palette  (J)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PalettesCommand}" CommandParameter="Apple" Content="RevertApple" ToolTip="Revert to Apple II palette  (I)" ToolBar.OverflowMode="Never" />
+            </ToolBar>
+            <ToolBar>
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="+Bit" Content="+Bits" ToolTip="Increase Bits [Number of colors]  (E)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="-Bit" Content="-Bits" ToolTip="Decrease Bits [Number of colors]  (D)" ToolBar.OverflowMode="Never" />
+                <Separator/>
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="+Skip1" Content="+Skip" ToolTip="Increase Skip Bytes between pictures or bitplanes  (R)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="-Skip1" Content="-Skip" ToolTip="Decrease Skip Bytes between pictures or bitplanes  (F)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="+Skip8" Content="+Skip8" ToolTip="Increase Skip Bytes Faster (by 8 bytes)  (Shift+R)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding ImageSizeCommand}" CommandParameter="-Skip8" Content="-Skip8" ToolTip="Decrease Skip Bytes Faster (by 8 bytes)  (Shift+F)" ToolBar.OverflowMode="Always" />
+            </ToolBar>
+            <ToolBar>
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="Normal" Content="NormalReverse" ToolTip="Normal or Reverse order of bitplanes  (N)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="Mode" Content="BitplaneMode" ToolTip="Bitplane Mode  (M)" ToolBar.OverflowMode="Never" />
+                <Separator/>
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="+BP0" Content="+BP0" ToolTip="Select which picture goes into bitplane 0  (0)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="+BP1" Content="+BP1" ToolTip="Select which picture goes into bitplane 1  (1)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="+BP2" Content="+BP2" ToolTip="Select which picture goes into bitplane 2  (2)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="+BP3" Content="+BP3" ToolTip="Select which picture goes into bitplane 3  (3)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="+BP4" Content="+BP4" ToolTip="Select which picture goes into bitplane 4  (4)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="+BP5" Content="+BP5" ToolTip="Select which picture goes into bitplane 5  (5)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="+BP6" Content="+BP6" ToolTip="Select which picture goes into bitplane 6  (6)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="+BP7" Content="+BP7" ToolTip="Select which picture goes into bitplane 7  (7)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="-BP0" Content="-BP0" ToolTip="Reverse which picture goes into bitplane 0  (Shift+0)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="-BP1" Content="-BP1" ToolTip="Reverse which picture goes into bitplane 1  (Shift+1)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="-BP2" Content="-BP2" ToolTip="Reverse which picture goes into bitplane 2  (Shift+2)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="-BP3" Content="-BP3" ToolTip="Reverse which picture goes into bitplane 3  (Shift+3)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="-BP4" Content="-BP4" ToolTip="Reverse which picture goes into bitplane 4  (Shift+4)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="-BP5" Content="-BP5" ToolTip="Reverse which picture goes into bitplane 5  (Shift+5)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="-BP6" Content="-BP6" ToolTip="Reverse which picture goes into bitplane 6  (Shift+6)" ToolBar.OverflowMode="Always" />
+                <Button Command="{Binding BitPlanesCommand}" CommandParameter="-BP7" Content="-BP7" ToolTip="Reverse which picture goes into bitplane 7  (Shift+7)" ToolBar.OverflowMode="Always" />
+            </ToolBar>
         </WrapPanel>
-        <StatusBar DockPanel.Dock ="Bottom" VerticalAlignment="Bottom" Background="Beige" Height="30"  >
+        <StatusBar DockPanel.Dock ="Bottom" VerticalAlignment="Bottom" Background="Beige" Height="30" FontFamily="Cascadia Mono" FontSize="13"  >
             <StatusBarItem>
                 <TextBlock Name="statBarText">Ready</TextBlock>
             </StatusBarItem>
         </StatusBar>
-        <Canvas Width="800" Height="600"/>
+        <Canvas Name="mainCanvas" Width="800" Height="600">
+            <Image Name="graphics" Panel.ZIndex="-100" Width="800" Height="600" Canvas.Left="0" Canvas.Top="0" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="None" />
+        </Canvas>
 
     </DockPanel>
 </Window>

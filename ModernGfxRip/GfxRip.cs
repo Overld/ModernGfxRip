@@ -14,6 +14,13 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Windows;
+using System.Windows.Media;
+using System.Drawing;
+using System.Windows.Media.Imaging;
+using System.Printing.IndexedProperties;
+using System.Data.Common;
+using System.Windows.Media.Media3D;
+using System.Numerics;
 
 namespace ModernGfxRip
 {
@@ -81,51 +88,6 @@ namespace ModernGfxRip
             LAST_MODE
         }
 
-        /* Apple II Colors
-         * Black  = #040204
-         * Orange = #fc8204
-         * Blue   = #0402fc
-         * Purple = #fc02fc
-         * Green  = #04fe04
-         * White  = #fcfefc
-         */
-
-        /*
-         * int offset = 0;
-int blXSize = 320/8;
-int blYSize = 200;
-
-int contin_save = 1;
-
-int bits = 1;
-
-int skip = 0;
-int skipmode = 0; // 0 = skip bytes after picture , 1 = skip bytes after each bitplane
-char skipmoder;
-
-bool reverse = false;
-int mode = 0;
-int palsearchmode = 2;
-
-char pmoder[4] = { 'S', 'X', 'E', 'A' };
-
-BITMAP * bitmap;
-
-RGB pal[256];
-
-int numX;
-int numY;
-
-bool zoom = false;
-
-char goto_num[255];
-
-int ttt=0;
-int palfound = 0;
-
-int bplorder[8] = {0,1,2,3,4,5,6,7};
-        */
-
         public class GfxRipConfig
         {
             // Constants used in code
@@ -146,7 +108,10 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
             // 0 = skip bytes after picture, 1 = skip bytes after each bitplane
             public int SkipMode { get; set; } = 0;
             public bool Reverse { get; set; } = false;
-            public byte[] BplOrder { get; set; } = new byte[8] { 0, 1, 2, 3, 4, 5, 6, 7 };
+            public bool Zoom { get; set; } = false;
+            public sbyte[] BplOrder { get; set; } = new sbyte[8] { 0, 1, 2, 3, 4, 5, 6, 7 };
+            public List<System.Windows.Media.Color> Colors { get; set; }
+
 
             /// <summary>
             /// Copy Constructor
@@ -166,7 +131,10 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
                 Skip = config.Skip;
                 SkipMode = config.SkipMode;
                 Reverse = config.Reverse;
+                Zoom = config.Zoom;
                 BplOrder = config.BplOrder;
+                // Perform a Deep Copy
+                Colors = config.Colors.ConvertAll(color => color);
             }
 
             /// <summary>
@@ -186,7 +154,29 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
                 Skip = 0;
                 SkipMode = 0;
                 Reverse = false;
-                BplOrder = new byte[8] { 0,1,2,3,4,5,6,7 };
+                Zoom = false;
+                BplOrder = new sbyte[8] { 0,1,2,3,4,5,6,7 };
+                Colors = GeneratePalette();
+            }
+
+            public List<System.Windows.Media.Color> GeneratePalette()
+            {
+                List<System.Windows.Media.Color> palette = new();
+                Random rnd = new Random();
+                byte[] randomBytes = new byte[3];
+
+                for (int loop = 0; loop < 256; loop++)
+                {
+                    rnd.NextBytes(randomBytes);
+                    palette.Add(System.Windows.Media.Color.FromRgb(randomBytes[0], randomBytes[1], randomBytes[2]));
+                }
+
+                palette[1] = System.Windows.Media.Color.FromRgb(0, 0, 0);
+                palette[0] = System.Windows.Media.Color.FromRgb(255, 255, 255);
+                palette[254] = System.Windows.Media.Color.FromRgb(0, 0, 0);
+                palette[253] = System.Windows.Media.Color.FromRgb(203, 203, 215);
+
+                return palette;
             }
 
             public string DisplayValues()
@@ -268,7 +258,16 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
         public bool IsSaved { get; set; } = false;
 
         // True if settings have changed and screen needs to be refreshed
-        private bool isDirty = false;
+        public bool isDirty = false;
+
+        // Image that Writable Bitmap is copied into
+        private Image? graphicBuffer;
+
+        // Width of the Image
+        private int graphicWidth;
+
+        // Height of the Image
+        private int graphicHeight;
 
         // Store the Binary Data read from the file
         public byte[]? BinaryData { get; set; }
@@ -276,12 +275,50 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
         // Store the size of the Binary Data that was read
         public long FileSize { get; set; } = 0;
 
+        // Temporary index used to search for Palettes
+        public long TempPalSearch { get; set; } = 0;
+
+        public BitmapPalette? BitmapPalette { get; set; }
+
+        public byte[]? Pixels { get; set; }
+
+        public WriteableBitmap? WBitMap { get; set; }
+
         // Current Configuration Settings
         public GfxRipConfig Config { get; set; }
 
         public GfxRip()
         {
             Config = new GfxRipConfig();
+            BitmapPalette = new BitmapPalette(Config.Colors);
+        }
+
+        public void SetupDrawingBitmap(Image graphics, int width, int height)
+        {
+            graphicBuffer = graphics;
+            graphicWidth = width;
+            graphicHeight = height;
+
+            SetupBitmapVariables();
+
+            ClearToColor(253);
+
+            if (WBitMap != null)
+            {
+                WBitMap.WritePixels(new Int32Rect(0, 0, WBitMap.PixelWidth, WBitMap.PixelHeight), Pixels,
+                                  WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8, 0);
+            }
+        }
+
+        private void SetupBitmapVariables()
+        {
+            WBitMap = new WriteableBitmap(graphicWidth, graphicHeight, 96, 96, PixelFormats.Indexed8, BitmapPalette);
+            if (graphicBuffer != null)
+            {
+                graphicBuffer.Source = WBitMap;
+            }
+
+            Pixels = new byte[WBitMap.PixelHeight * WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8];
         }
 
         public bool ReadBinaryData(string binaryFileName)
@@ -303,6 +340,9 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
             FileSize = BinaryData.Length;
             isDirty = true;
 
+            // Redraw the screen
+            Refresh();
+
             return true;
         }
 
@@ -318,6 +358,9 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
 
             // Configuration changed, so will need to re-render the screen
             isDirty = true;
+
+            // Redraw the screen
+            Refresh();
         }
 
         /// <summary>
@@ -343,6 +386,9 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
                 isDirty = true;
 
                 result = true;
+
+                // Redraw the screen
+                Refresh();
             }
             catch (IOException e)
             {
@@ -380,6 +426,279 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
             return result;
         }
 
+        public void GetPaletteInfo(ref BMPFileInfo bmpDataInfo)
+        {
+            if (bmpDataInfo.infoHeader != null)
+            {
+                // Check to see if it is a BMP Palette
+                if ((bmpDataInfo.infoHeader.bitsPerPixel > 1) && (bmpDataInfo.infoHeader.bitsPerPixel <= 8) && (bmpDataInfo.colorTable != null))
+                {
+                    Config.Colors = bmpDataInfo.colorTable.palette.ConvertAll(color => color);
+                    BitmapPalette = new BitmapPalette(Config.Colors);
+
+                    // Recreate Writeable Bitmap with new color Palette
+                    SetupBitmapVariables();
+
+                    isDirty = true;
+                }
+                else
+                {
+                    MessageBox.Show("Error! BMP File has no color palette. The bits per pixel are " + bmpDataInfo.infoHeader.bitsPerPixel + "!");
+                }
+            }
+        }
+
+        void Grab_UAE()
+        {
+            // Simpler method to find palettes!
+            bool found = false;
+            while (!found && (TempPalSearch < FileSize - 64) && (BinaryData != null))
+            {
+                if (BinaryData[TempPalSearch] == 0x01 && BinaryData[TempPalSearch + 1] == 0x80 && BinaryData[TempPalSearch + 4] == 0x01 && BinaryData[TempPalSearch + 5] == 0x82)
+                {
+                    found = true;
+                    Config.PaletteFound = TempPalSearch;
+                    short c1, c2;
+                    byte red, green, blue;
+
+                    // Generate the normal 32 colors
+                    for (int i = 0; i < 32; i++)
+                    {
+                        c1 = BinaryData[TempPalSearch + 2 + i * 4];
+                        c2 = BinaryData[TempPalSearch + 3 + i * 4];
+
+                        // Convert 4 Bit Color range to 8 Bit Color.  i.e. 0 => 00, 1 => 11, 3 => 33, 9 => 99, B => BB, F => FF
+                        red = (byte) (((c1 & 0x0F) << 4) & 0xFF);
+                        green = (byte) (c2 & 0xF0);
+                        blue  = (byte) (((c2 & 0x0F) << 4) & 0xFF);
+
+                        red   |= (byte) ((red >> 4) & 0x0F);
+                        green |= (byte) ((green >> 4) & 0x0F);
+                        blue  |= (byte) ((blue >> 4) & 0x0F);
+
+                        Config.Colors[i] = System.Windows.Media.Color.FromRgb(red, green, blue);
+                    }
+
+                    // Generate the Half Palette 32 colors
+                    for (int i = 0; i < 32; i++)
+                    {
+                        c1 = BinaryData[TempPalSearch + 2 + i * 4];
+                        c2 = BinaryData[TempPalSearch + 3 + i * 4];
+
+                        // Convert 4 Bit Color range to 8 Bit Color.  i.e. 0 => 00, 1 => 11, 3 => 33, 9 => 99, B => BB, F => FF
+                        // Convert colors to Half Colors by shifting right by 1
+                        red = (byte)((((c1 & 0x0F) >> 1) << 4) & 0xF0);
+                        green = (byte)((c2 >> 1) & 0xF0);
+                        blue = (byte)((((c2 & 0x0F) >> 1) << 4) & 0xF0);
+
+                        red |= (byte)((red >> 4) & 0x0F);
+                        green |= (byte)((green >> 4) & 0x0F);
+                        blue |= (byte)((blue >> 4) & 0x0F);
+
+                        Config.Colors[32 + i] = System.Windows.Media.Color.FromRgb(red, green, blue);
+                    }
+
+                    BitmapPalette = new BitmapPalette(Config.Colors);
+
+                    // Recreate Writeable Bitmap with new color Palette
+                    SetupBitmapVariables();
+
+                    isDirty = true;
+                }
+                TempPalSearch++;
+            }
+
+            if (!found)
+            {
+                TempPalSearch = 0;
+            }
+        }
+
+        void Grab_UAE2()
+        {
+            // More advanced method to find palettes!
+            bool[] colfound = new bool[32];
+            bool nomorecols = false;
+            int foundcolors = 0;
+
+            for (int i = 0; i < 32; i++)
+            {
+                colfound[i] = false;
+            }
+            bool found = false;
+            while (!found && (TempPalSearch < FileSize - 64) && (BinaryData != null))
+            {
+                if (BinaryData[TempPalSearch + 0] == 0x01 && BinaryData[TempPalSearch + 1] >= 0x80 && BinaryData[TempPalSearch + 1] <= 0x9f &&
+                    BinaryData[TempPalSearch + 4] == 0x01 && BinaryData[TempPalSearch + 5] >= 0x80 && BinaryData[TempPalSearch + 5] <= 0x9f &&
+                    BinaryData[TempPalSearch + 8] == 0x01 && BinaryData[TempPalSearch + 9] >= 0x80 && BinaryData[TempPalSearch + 9] <= 0x9f &&
+                    BinaryData[TempPalSearch + 12] == 0x01 && BinaryData[TempPalSearch + 13] >= 0x80 && BinaryData[TempPalSearch + 13] <= 0x9f)
+                {
+                    found = true;
+                    Config.PaletteFound = TempPalSearch;
+                    short c1, c2;
+                    byte red, green, blue;
+                    int colind;
+
+                    int i = 0;
+                    bool ended = false;
+
+                    while (TempPalSearch + (i * 4) < FileSize - 2 && !ended)
+                    {
+                        if (BinaryData[TempPalSearch + (i * 4) + 0] == 0xff && BinaryData[TempPalSearch + (i * 4) + 1] == 0xff)
+                        {
+                            ended = true;
+                        }
+                        else
+                        {
+                            if (BinaryData[TempPalSearch + 1 + (i * 4)] >= 0x80 && BinaryData[TempPalSearch + 1 + (i * 4)] <= 0xbf)
+                            {
+                                colind = (BinaryData[TempPalSearch + 1 + (i * 4)] - 0x80) >> 1;
+                                if (!colfound[colind])
+                                {
+                                    colfound[colind] = true;
+                                    c1 = BinaryData[TempPalSearch + 2 + (i * 4)];
+                                    c2 = BinaryData[TempPalSearch + 3 + (i * 4)];
+
+                                    // Convert 4 Bit Color range to 8 Bit Color.  i.e. 0 => 00, 1 => 11, 3 => 33, 9 => 99, B => BB, F => FF
+                                    red = (byte)(((c1 & 0x0F) << 4) & 0xFF);
+                                    green = (byte)(c2 & 0xF0);
+                                    blue = (byte)(((c2 & 0x0F) << 4) & 0xFF);
+
+                                    red |= (byte)((red >> 4) & 0x0F);
+                                    green |= (byte)((green >> 4) & 0x0F);
+                                    blue |= (byte)((blue >> 4) & 0x0F);
+
+                                    Config.Colors[colind] = System.Windows.Media.Color.FromRgb(red, green, blue);
+                                    if (!nomorecols)
+                                    {
+                                        foundcolors += 4;
+                                    }
+                                }
+                                else
+                                {
+                                    nomorecols = true;
+                                }
+                            }
+                            else
+                            {
+                                nomorecols = true;
+                            }
+                        }
+                        i++;
+                    }
+                    BitmapPalette = new BitmapPalette(Config.Colors);
+
+                    // Recreate Writeable Bitmap with new color Palette
+                    SetupBitmapVariables();
+
+                    isDirty = true;
+                }
+                if (foundcolors > 0)
+                {
+                    TempPalSearch += foundcolors;
+                }
+                else
+                {
+                    TempPalSearch++;
+                }
+            }
+            if (!found)
+            {
+                TempPalSearch = 0;
+            }
+        }
+
+        static int Search(byte[] src, byte[] pattern)
+        {
+            int maxFirstCharSlot = src.Length - pattern.Length + 1;
+            for (int i = 0; i < maxFirstCharSlot; i++)
+            {
+                if (src[i] != pattern[0]) // compare only first byte
+                    continue;
+
+                // found a match on first byte, now try to match rest of the pattern
+                for (int j = pattern.Length - 1; j >= 1; j--)
+                {
+                    if (src[i + j] != pattern[j]) break;
+                    if (j == 1) return i;
+                }
+            }
+            return -1;
+        }
+
+        int FindChunk(string chunkName)
+        {
+            if (BinaryData != null)
+            {
+                byte[] pattern = Encoding.ASCII.GetBytes(chunkName);
+
+                return Search(BinaryData, pattern);
+            }
+
+            return -1;
+        }
+
+        void Grab_UAE3()
+        {
+            // Grab the palette from the snapshot
+            int pos = FindChunk("CHIP");
+            if ((pos != -1) && (BinaryData != null))
+            {
+                short c1, c2;
+                byte red, green, blue;
+
+                Config.PaletteFound = pos + 4 + 8 + 4 + 0x0180 - (64 + 12 * 8);
+                for (int i = 0; i < 63; i++)
+                {
+                    c1 = BinaryData[Config.PaletteFound + (i * 2)];
+                    c2 = BinaryData[Config.PaletteFound + (i * 2) + 1];
+
+                    // Convert 4 Bit Color range to 8 Bit Color.  i.e. 0 => 00, 1 => 11, 3 => 33, 9 => 99, B => BB, F => FF
+                    red = (byte)(((c1 & 0x0F) << 4) & 0xFF);
+                    green = (byte)(c2 & 0xF0);
+                    blue = (byte)(((c2 & 0x0F) << 4) & 0xFF);
+
+                    red |= (byte)((red >> 4) & 0x0F);
+                    green |= (byte)((green >> 4) & 0x0F);
+                    blue |= (byte)((blue >> 4) & 0x0F);
+
+                    Config.Colors[i] = System.Windows.Media.Color.FromRgb(red, green, blue);
+                }
+                BitmapPalette = new BitmapPalette(Config.Colors);
+
+                // Recreate Writeable Bitmap with new color Palette
+                SetupBitmapVariables();
+
+                isDirty = true;
+            }
+        }
+
+        void Grab_UAE3AGA()
+        {
+            // Grab the AGA palette from the snapshot
+            int pos = FindChunk("AGAC");
+            if ((pos != -1) && (BinaryData != null))
+            {
+                byte red, green, blue;
+
+                Config.PaletteFound = pos + 8 + 4;
+                for (int i = 0; i < 256; i++)
+                {
+                    red   = BinaryData[Config.PaletteFound + (i * 4) + 1];
+                    green = BinaryData[Config.PaletteFound + (i * 4) + 2];
+                    blue  = BinaryData[Config.PaletteFound + (i * 4) + 3];
+
+                    Config.Colors[i] = System.Windows.Media.Color.FromRgb(red, green, blue);
+                }
+                BitmapPalette = new BitmapPalette(Config.Colors);
+
+                // Recreate Writeable Bitmap with new color Palette
+                SetupBitmapVariables();
+
+                isDirty = true;
+            }
+        }
+
         public void AdjustImageSize(string? command)
         {
             switch (command)
@@ -411,6 +730,36 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
                         Config.BlYSize -= 8;
                     }
                     break;
+                case "+Bit":
+                    if (Config.Bits < 8)
+                    {
+                        Config.Bits++;
+                    }
+                    break;
+                case "-Bit":
+                    if (Config.Bits > 1)
+                    {
+                        Config.Bits--;
+                    }
+                    break;
+                case "+Skip1":
+                    Config.Skip++;
+                    break;
+                case "-Skip1":
+                    if (Config.Skip > 0)
+                    {
+                        Config.Skip--;
+                    }
+                    break;
+                case "+Skip8":
+                    Config.Skip += 8;
+                    break;
+                case "-Skip8":
+                    if (Config.Skip > 7)
+                    {
+                        Config.Skip -= 8;
+                    }
+                    break;
                 default:
                     // Unknown parameter passed so just abort
                     return;
@@ -418,6 +767,9 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
 
             // Parameters were changed so update bitmap
             isDirty = true;
+
+            // Redraw the screen
+            Refresh();
         }
 
         public void AdjustPictureSize(string? command)
@@ -485,16 +837,581 @@ int bplorder[8] = {0,1,2,3,4,5,6,7};
 
             // Parameters were changed so update bitmap
             isDirty = true;
+
+            // Redraw the screen
+            Refresh();
+        }
+
+        public void ModifyPalettes(string? command)
+        {
+            switch (command)
+            {
+                case "Skip":
+                    if (Config.SkipMode == 0)
+                    {
+                        Config.SkipMode = 1;
+                    }
+                    else
+                    {
+                        Config.SkipMode = 0;
+                    }
+                    break;
+                case "Pal":
+                    Config.PalSearchMode += 1;
+                    if (Config.PalSearchMode == PaletteSearchMode.LAST_MODE)
+                    {
+                        Config.PalSearchMode = 0;
+                    }
+                    break;
+                case "Trans":
+                    // Set Color 0 (Transparent Color) to Magenta
+                    Config.Colors[0] = System.Windows.Media.Color.FromRgb(255, 0, 255);
+                    BitmapPalette = new BitmapPalette(Config.Colors);
+
+                    // Recreate Writeable Bitmap with new color Palette
+                    SetupBitmapVariables();
+                    break;
+                case "Search":
+                    switch (Config.PalSearchMode)
+                    {
+                        case PaletteSearchMode.SIMPLE:
+                            Grab_UAE();
+                            break;
+                        case PaletteSearchMode.ADVANCED:
+                            Grab_UAE2();
+                            break;
+                        case PaletteSearchMode.ECS_UAE_SAVESTATE:
+                            Grab_UAE3();
+                            break;
+                        case PaletteSearchMode.AGA_UAE_SAVESTATE:
+                            Grab_UAE3AGA();
+                            break;
+                    }
+                    break;
+                case "Standard":
+                    // Reset Palette, and set it up
+                    Config.Colors = Config.GeneratePalette();
+                    BitmapPalette = new BitmapPalette(Config.Colors);
+
+                    // Recreate Writeable Bitmap with new color Palette
+                    SetupBitmapVariables();
+                    break;
+                case "Amiga":
+                    TempPalSearch = Config.PaletteFound;
+                    switch (Config.PalSearchMode)
+                    {
+                        case PaletteSearchMode.SIMPLE:
+                            Grab_UAE();
+                            break;
+                        case PaletteSearchMode.ADVANCED:
+                            Grab_UAE2();
+                            break;
+                        case PaletteSearchMode.ECS_UAE_SAVESTATE:
+                            Grab_UAE3();
+                            break;
+                        case PaletteSearchMode.AGA_UAE_SAVESTATE:
+                            Grab_UAE3AGA();
+                            break;
+                    }
+                    break;
+                case "Apple":
+                    /* Apple II Colors
+                     * Black  = #040204
+                     * Green  = #04fe04
+                     * Purple = #fc02fc
+                     * Orange = #fc8204
+                     * Blue   = #0402fc
+                     * White  = #fcfefc
+                     */
+                    // Reset Palette, and set it up
+                    Config.Colors = Config.GeneratePalette();
+                    // Set Color 0 to Black
+                    Config.Colors[0] = System.Windows.Media.Color.FromRgb(0x04, 0x02, 0x04);
+                    // Set Color 1 to Green
+                    Config.Colors[1] = System.Windows.Media.Color.FromRgb(0x04, 0xFE, 0x04);
+                    // Set Color 2 to Violet
+                    Config.Colors[2] = System.Windows.Media.Color.FromRgb(0xFC, 0x02, 0xFC);
+                    // Set Color 3 to Orange
+                    Config.Colors[3] = System.Windows.Media.Color.FromRgb(0xFC, 0x82, 0x04);
+                    // Set Color 4 to Blue
+                    Config.Colors[4] = System.Windows.Media.Color.FromRgb(0x04, 0x02, 0xFC);
+                    // Set Color 5 to White
+                    Config.Colors[5] = System.Windows.Media.Color.FromRgb(0xFC, 0xFE, 0xFC);
+                    BitmapPalette = new BitmapPalette(Config.Colors);
+
+                    // Recreate Writeable Bitmap with new color Palette
+                    SetupBitmapVariables();
+                    break;
+                default:
+                    // Unknown parameter passed so just abort
+                    return;
+            }
+
+            // Parameters were changed so update bitmap
+            isDirty = true;
+
+            // Redraw the screen
+            Refresh();
+        }
+
+
+        public void ModifyBitplanes(string? command)
+        {
+            switch (command)
+            {
+                case "Normal":
+                    Config.Reverse = !Config.Reverse;
+                    break;
+                case "Mode":
+                    Config.Mode += 1;
+                    if (Config.Mode == BitplaneModeType.LAST_MODE)
+                    {
+                        Config.Mode = 0;
+                    }
+                    break;
+                case "+BP0":
+                    Config.BplOrder[0]++;
+                    if (Config.BplOrder[0] > 7)
+                    {
+                        Config.BplOrder[0] = 0;
+                    }
+                    break;
+                case "+BP1":
+                    Config.BplOrder[1]++;
+                    if (Config.BplOrder[1] > 7)
+                    {
+                        Config.BplOrder[1] = 0;
+                    }
+                    break;
+                case "+BP2":
+                    Config.BplOrder[2]++;
+                    if (Config.BplOrder[2] > 7)
+                    {
+                        Config.BplOrder[2] = 0;
+                    }
+                    break;
+                case "+BP3":
+                    Config.BplOrder[3]++;
+                    if (Config.BplOrder[3] > 7)
+                    {
+                        Config.BplOrder[3] = 0;
+                    }
+                    break;
+                case "+BP4":
+                    Config.BplOrder[4]++;
+                    if (Config.BplOrder[4] > 7)
+                    {
+                        Config.BplOrder[4] = 0;
+                    }
+                    break;
+                case "+BP5":
+                    Config.BplOrder[5]++;
+                    if (Config.BplOrder[5] > 7)
+                    {
+                        Config.BplOrder[5] = 0;
+                    }
+                    break;
+                case "+BP6":
+                    Config.BplOrder[6]++;
+                    if (Config.BplOrder[6] > 7)
+                    {
+                        Config.BplOrder[6] = 0;
+                    }
+                    break;
+                case "+BP7":
+                    Config.BplOrder[7]++;
+                    if (Config.BplOrder[7] > 7)
+                    {
+                        Config.BplOrder[7] = 0;
+                    }
+                    break;
+                case "-BP0":
+                    Config.BplOrder[0]--;
+                    if (Config.BplOrder[0] < 0)
+                    {
+                        Config.BplOrder[0] = 7;
+                    }
+                    break;
+                case "-BP1":
+                    Config.BplOrder[1]--;
+                    if (Config.BplOrder[1] < 0)
+                    {
+                        Config.BplOrder[1] = 7;
+                    }
+                    break;
+                case "-BP2":
+                    Config.BplOrder[2]--;
+                    if (Config.BplOrder[2] < 0)
+                    {
+                        Config.BplOrder[2] = 7;
+                    }
+                    break;
+                case "-BP3":
+                    Config.BplOrder[3]--;
+                    if (Config.BplOrder[3] < 0)
+                    {
+                        Config.BplOrder[3] = 7;
+                    }
+                    break;
+                case "-BP4":
+                    Config.BplOrder[4]--;
+                    if (Config.BplOrder[4] < 0)
+                    {
+                        Config.BplOrder[4] = 7;
+                    }
+                    break;
+                case "-BP5":
+                    Config.BplOrder[5]--;
+                    if (Config.BplOrder[5] < 0)
+                    {
+                        Config.BplOrder[5] = 7;
+                    }
+                    break;
+                case "-BP6":
+                    Config.BplOrder[6]--;
+                    if (Config.BplOrder[6] < 0)
+                    {
+                        Config.BplOrder[6] = 7;
+                    }
+                    break;
+                case "-BP7":
+                    Config.BplOrder[7]--;
+                    if (Config.BplOrder[7] < 0)
+                    {
+                        Config.BplOrder[7] = 7;
+                    }
+                    break;
+                default:
+                    // Unknown parameter passed so just abort
+                    return;
+            }
+
+            // Parameters were changed so update bitmap
+            isDirty = true;
+
+            // Redraw the screen
+            Refresh();
+        }
+        
+        void PutPixel(int x, int y, byte pixelColor)
+        {
+            if ((WBitMap != null) && (Pixels != null))
+            {
+                int stride = WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8;
+                int offset = (y * stride) + x;
+
+                Pixels[offset] = pixelColor;
+            }
+        }
+
+        void StretchBlit(int sourceX, int sourceY, int sourceWidth, int sourceHeight,
+                         int destX, int destY, int destWidth, int destHeight)
+        {
+            if ((WBitMap != null) && (Pixels != null))
+            {
+                int stride = WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8;
+                int height = sourceHeight;
+                int srcStartOffset = (stride * sourceY) + sourceX;
+                int dstStartOffset = (stride * destY) + destX;
+                byte pixelColor = 0;
+
+                while (height > 0)
+                {
+                    int width = sourceWidth;
+                    int srcOffset = srcStartOffset;
+                    int dstOffset = dstStartOffset;
+                    while (width > 0)
+                    {
+                        // Read Source Color
+                        pixelColor = Pixels[srcOffset++];
+
+                        // Write Destination Pixels
+                        Pixels[dstOffset] = pixelColor;
+                        Pixels[dstOffset+1] = pixelColor;
+                        Pixels[dstOffset + stride] = pixelColor;
+                        Pixels[dstOffset + stride + 1] = pixelColor;
+                        dstOffset += 2;
+                        --width;
+                    }
+                    srcStartOffset += stride;
+                    dstStartOffset += (stride * 2);
+                    --height;
+                }
+            }
+        }
+
+        void DrawRect(int left, int top, int right, int bottom, byte pixelColor)
+        {
+            if ((WBitMap != null) && (Pixels != null))
+            {
+                int stride = WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8;
+
+                int width = (right - left) + 1;
+                int height = (bottom - top) + 1 - 2;    // Subtract the Top and Bottom Rectangles
+
+                int topRow = top * stride + left;
+                int bottomRow = bottom * stride + left;
+                int leftColumn = (top + 1) * stride + left;
+                int rightColumn = (top + 1) * stride + right;
+
+                // Do the Top and Bottom Row
+                for (int loop = 0; loop < width; loop++)
+                {
+                    Pixels[topRow + loop] = pixelColor;
+                    Pixels[bottomRow + loop] = pixelColor;
+                }
+
+                // Do the Left and Right Column
+                for (int loop = 0; loop < height; loop++)
+                {
+                    Pixels[leftColumn + (loop * stride)] = pixelColor;
+                    Pixels[rightColumn + (loop * stride)] = pixelColor;
+                }
+            }
+        }
+
+        byte GetPixelColor(long pos, int x, int y)
+        {
+            bool[] bit = new bool[8];
+            long p;
+            int byte1;
+            int bit1;
+            int nn;
+            int bitn;
+
+            int i;
+
+            for (i = 0; i < 8; i++)
+            {
+                bit[i] = false;
+            }
+
+            // Make sure there is data to analyze
+            if (BinaryData == null)
+            {
+                return 0;
+            }
+
+            for (i = 0; i < Config.Bits; i++)
+            {
+                switch (Config.Mode)
+                {
+                    case BitplaneModeType.AMIGA_STANDARD:
+                    default:
+                        // Amiga type bitplanes
+                        p = pos + (Config.BlXSize * Config.BlYSize) * (i);
+                        nn = x + (y * (Config.BlXSize * 8));
+                        break;
+                    case BitplaneModeType.ATARI_ST_STANDARD:
+                        // ST Type bitplanes
+                        p = pos + Config.BlXSize * (i);
+                        nn = x + (Config.Bits * y * (Config.BlXSize * 8));
+                        break;
+                    case BitplaneModeType.AMIGA_SPRITE:
+                        // mode == 2	// Amiga Sprite !!!
+                        if (i < 2)
+                        {
+                            p = pos + Config.BlXSize * (i);
+                            nn = x + ((2 * y) * (Config.BlXSize * 8));
+                        }
+                        else
+                        {
+                            p = pos + Config.BlXSize * (i - 2) + (Config.BlYSize * Config.BlXSize) * 2;
+                            nn = x + ((2 * y) * (Config.BlXSize * 8));
+                        }
+                        break;
+                    case BitplaneModeType.CPC_DOUBLE_STANDARD:
+                        // mode == 3 // CPC gfx for Bat-Man / HoH
+                        p = pos + (x / 8) + i;
+                        nn = x + ((2 * y) * (Config.BlXSize * 8));
+                        break;
+                    case BitplaneModeType.CPC_SINGLE_STANDARD:
+                        //  mode ==4 // CPC gfx for Ultimate games
+                        p = pos + (x / 4) + (Config.BlXSize * y * 2);
+                        nn = (i * 4) + x % 4;
+                        break;
+                    case BitplaneModeType.APPLE_II_STANDARD:
+                        // Apple II Colors
+                        p = pos;
+                        nn = 0;
+                        break;
+                }
+                if (Config.SkipMode == 1)
+                {
+                    p += Config.Skip * i;
+                }
+                byte1 = nn / 8;
+                bit1 = 7 - (nn % 8);
+                if (Config.Reverse)
+                {
+                    bitn = (Config.Bits - i) - 1;
+                }
+                else
+                {
+                    bitn = i;
+                }
+
+                // Check to see if at end of Memory to view.
+                if (p + byte1 < FileSize)
+                {
+                    if ((BinaryData[p + byte1] & (1 << bit1)) != 0)
+                    {
+                        bit[bitn] = true;
+                    }
+                    else
+                    {
+                        bit[bitn] = false;
+                    }
+                }
+                else
+                {
+                    bit[bitn] = false;
+                }
+            }
+
+            byte col = 0;
+
+            for (i = 0; i < Config.Bits; i++)
+            {
+                if (bit[Config.BplOrder[i]])
+                {
+                    col += (byte) ((1 << i) & 0xFF);
+                }
+            }
+
+            return col;
+        }
+
+        void DrawCustomBitmap(long pos, int xx, int yy)
+        {
+            for (int x = 0; x < Config.BlXSize * 8; x++)
+            {
+                for (int y = 0; y < Config.BlYSize; y++)
+                {
+                    PutPixel(xx + x, yy + y, GetPixelColor(pos, x, y));
+                }
+            }
+        }
+
+        void DrawGraphics()
+        {
+            // Draw the contents to the bitmap
+            if (WBitMap != null)
+            {
+                int xx, yy;
+
+                long pos = Config.Offset;
+
+                for (int y = 0; y < Config.NumY; y++)
+                {
+                    for (int x = 0; x < Config.NumX; x++)
+                    {
+                        xx = x * (Config.BlXSize * 8 + GfxRipConfig.Hole);
+                        yy = y * (Config.BlYSize + GfxRipConfig.Hole);
+
+                        DrawCustomBitmap(pos, xx, yy);
+                        if (Config.SkipMode == 0)
+                        {
+                            pos += (Config.BlXSize * Config.BlYSize * Config.Bits) + Config.Skip;
+                        }
+                        else
+                        {
+                            pos += (Config.BlXSize * Config.BlYSize + Config.Skip) * Config.Bits;
+                        }
+                    }
+                }
+
+                WBitMap.WritePixels(new Int32Rect(0, 0, WBitMap.PixelWidth, WBitMap.PixelHeight), Pixels,
+                                  WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8, 0);
+            }
+        }
+
+        void Draw_Zoom()
+        {
+            if ((WBitMap != null) && (Pixels != null))
+            {
+                int offset;
+                int xx, yy;
+                int zoomWidth, zoomHeight;
+                int zoomBlXSize, zoomBlYSize;
+
+
+                if ((Config.BlXSize * 8 * 2 + 4) > GfxRipConfig.ScreenWidth / 2) 
+                {
+                    zoomBlXSize = ((GfxRipConfig.ScreenWidth / 2) - 4) / (8 * 2);
+                }
+                else
+                {
+                    zoomBlXSize = Config.BlXSize;
+                }
+
+                if (((Config.BlYSize * 2) + 4) > GfxRipConfig.ScreenHeight / 2)
+                {
+                    zoomBlYSize = ((GfxRipConfig.ScreenHeight / 2) - 4) / 2;
+                }
+                else
+                {
+                    zoomBlYSize = Config.BlYSize;
+                }
+
+                zoomWidth = (zoomBlXSize * 8) * 2 + 4;
+                zoomHeight = (zoomBlYSize * 2) + 4;
+
+                xx = GfxRipConfig.ScreenWidth - zoomWidth;
+                yy = GfxRipConfig.ScreenHeight - zoomHeight;
+
+                // Draw Zoomed In Graphics of Picture located in first area
+                StretchBlit(0, 0, zoomBlXSize * 8, zoomBlYSize, xx + 2, yy + 2, zoomBlXSize * 8 * 2, zoomBlYSize * 2);
+
+                // Draw a Box around the Zoom window in Black
+                DrawRect(xx, yy, GfxRipConfig.ScreenWidth - 1, GfxRipConfig.ScreenHeight - 1, 1);
+
+                // Draw a Box around the Zoom window inset by 1 with default background color
+                DrawRect(xx + 1, yy + 1, GfxRipConfig.ScreenWidth - 2, GfxRipConfig.ScreenHeight - 2, 253);
+
+                // Determine the offset into the pixel data buffer
+                offset = ((WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8) * yy) + xx;
+
+                // Copy the Zoom Window Data
+                WBitMap.WritePixels(new Int32Rect(xx, yy, zoomWidth, zoomHeight), Pixels,
+                              WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8, offset);
+            }
+        }
+
+        void ClearToColor(byte pixelColor)
+        {
+            if (Pixels != null) 
+            {
+                for (int loop = 0; loop < Pixels.Length; loop++)
+                {
+                    Pixels[loop] = pixelColor;
+                }
+            }
         }
 
         public void Refresh()
         {
-            // Check to see if need to update bitmap
-            if (isDirty)
+            // Only draw graphics to screen when there is binary data to load
+            if (BinaryData != null)
             {
-                isDirty = false;
+                // Check to see if need to update bitmap
+                if (isDirty)
+                {
+                    // Clear the bitmap
+                    ClearToColor(253);
+
+                    // Draw all the graphics
+                    DrawGraphics();
+
+                    // Draw the Zoom if enabled
+                    if (Config.Zoom)
+                    {
+                        Draw_Zoom();
+                    }
+
+                    isDirty = false;
+                }
             }
         }
-
     }
 }

@@ -35,6 +35,25 @@ namespace ModernGfxRip
         // Binary Data to view is loaded
         public bool BinLoaded { set; get; }
 
+        // Zoom variable
+        public bool ZoomStatus
+        {
+            set
+            {
+                gfxRip.Config.Zoom = value;
+                ZoomMenu.IsChecked = value;
+
+                // Force Screen to Redraw
+                gfxRip.isDirty = true;
+                gfxRip.Refresh();
+            }
+
+            get
+            {
+                return gfxRip.Config.Zoom;
+            }
+        }
+
         public WPFMenus()
         {
             InitializeComponent();
@@ -49,6 +68,9 @@ namespace ModernGfxRip
             gfxRipCfgName = "undefined";
 
             this.DataContext = new KeyCommandsContext(this);
+
+            // Setup Memory for Drawing Purposes
+            gfxRip.SetupDrawingBitmap(graphics, (int)mainCanvas.Width, (int)mainCanvas.Height);
 
             // Put default text in status bar
             statBarText.Text = "Ready";
@@ -190,6 +212,26 @@ namespace ModernGfxRip
                 UpdateStatusBar();
             }
         }
+        public void ModifyPalettes(string? command)
+        {
+            if (BinLoaded)
+            {
+                gfxRip.ModifyPalettes(command);
+
+                UpdateStatusBar();
+            }
+        }
+
+
+        public void ModifyBitplanes(string? command)
+        {
+            if (BinLoaded)
+            {
+                gfxRip.ModifyBitplanes(command);
+
+                UpdateStatusBar();
+            }
+        }
 
         /// <summary>
         /// Displays a warning dialog to the user that the configuration file was changed, and do you want to lose your changes?
@@ -224,6 +266,11 @@ namespace ModernGfxRip
         public bool LoadBinaryData(string filename)
         {
             return gfxRip.ReadBinaryData(filename);
+        }
+
+        public void GetBMPInfo(ref BMPFileInfo bmpInfo)
+        {
+            gfxRip.GetPaletteInfo(ref bmpInfo);
         }
 
         public long ConfigOffset
@@ -271,6 +318,10 @@ namespace ModernGfxRip
         {
             // Update the Status Bar with Latest Settings
             statBarText.Text = gfxRip.Config.DisplayValues();
+        }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
         }
     }
 }

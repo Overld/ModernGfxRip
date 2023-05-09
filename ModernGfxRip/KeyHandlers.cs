@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -275,13 +276,11 @@ namespace ModernGfxRip
         {
             // Get Menus Status
             private readonly WPFMenus menu;
-            // See if Zoom window is Active
-            private bool zoomActive;
 
             public ZoomWindowKey(WPFMenus menu)
             {
                 this.menu = menu;
-                this.zoomActive = false;
+                menu.ZoomStatus = false;
             }
 
             public event EventHandler? CanExecuteChanged
@@ -303,9 +302,7 @@ namespace ModernGfxRip
 
             public void Execute(object? parameter)
             {
-                this.zoomActive = !this.zoomActive;
-
-                MessageBox.Show("Toggle Zoom Wimdow: visible=" + this.zoomActive);
+                menu.ZoomStatus = !menu.ZoomStatus;
             }
         }
 
@@ -344,7 +341,18 @@ namespace ModernGfxRip
                 };
                 if (openFileDialog.ShowDialog() == true)
                 {
-                    MessageBox.Show("Get Color Palette from " + openFileDialog.FileName);
+                    // Read BMP File information
+                    try
+                    {
+                        BMPFileInfo objDataInfo = new(openFileDialog.FileName);
+
+                        // Have BMP Info so now read palette information
+                        menu.GetBMPInfo(ref objDataInfo);
+                    }
+                    catch (IOException e)
+                    {
+                        throw e;
+                    }
                 }
             }
         }
@@ -380,6 +388,7 @@ namespace ModernGfxRip
                 menu.ModifyImageSize((string?) parameter);
             }
         }
+
         public class PictureSize : ICommand
         {
             private readonly WPFMenus menu;
@@ -409,6 +418,70 @@ namespace ModernGfxRip
             public void Execute(object? parameter)
             {
                 menu.ModifyPictureSize((string?) parameter);
+            }
+        }
+
+        public class PaletteHandlers : ICommand
+        {
+            private readonly WPFMenus menu;
+
+            public PaletteHandlers(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
+
+            public bool CanExecute(object? parameter)
+            {
+                return menu.BinLoaded;
+            }
+
+            public void Execute(object? parameter)
+            {
+                menu.ModifyPalettes((string?)parameter);
+            }
+        }
+
+        public class BitPlanes : ICommand
+        {
+            private readonly WPFMenus menu;
+
+            public BitPlanes(WPFMenus menu)
+            {
+                this.menu = menu;
+            }
+
+            public event EventHandler? CanExecuteChanged
+            {
+                add
+                {
+                    CommandManager.RequerySuggested += value;
+                }
+                remove
+                {
+                    CommandManager.RequerySuggested -= value;
+                }
+            }
+
+            public bool CanExecute(object? parameter)
+            {
+                return menu.BinLoaded;
+            }
+
+            public void Execute(object? parameter)
+            {
+                menu.ModifyBitplanes((string?)parameter);
             }
         }
 
@@ -499,6 +572,22 @@ namespace ModernGfxRip
                 get
                 {
                     return new PictureSize(menus);
+                }
+            }
+
+            public ICommand PalettesCommand
+            {
+                get
+                {
+                    return new PaletteHandlers(menus);
+                }
+            }
+
+            public ICommand BitPlanesCommand
+            {
+                get
+                {
+                    return new BitPlanes(menus);
                 }
             }
         }
