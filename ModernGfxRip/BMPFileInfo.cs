@@ -163,9 +163,9 @@ namespace ModernGfxRip
             Array.Copy(fileData, 0x02, longData, 0, 4);
             bmpHeader.fileSize = ConvertLong(longData);
             Array.Copy(fileData, 0x06, shortData, 0, 2);
-            bmpHeader.reservedA = ConvertLong(shortData);
+            bmpHeader.reservedA = ConvertShort(shortData);
             Array.Copy(fileData, 0x08, shortData, 0, 2);
-            bmpHeader.reservedB = ConvertLong(shortData);
+            bmpHeader.reservedB = ConvertShort(shortData);
             Array.Copy(fileData, 0x0A, longData, 0, 4);
             bmpHeader.dataOffset = ConvertLong(longData);
 

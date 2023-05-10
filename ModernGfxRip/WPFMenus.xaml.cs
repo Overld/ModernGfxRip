@@ -74,6 +74,16 @@ namespace ModernGfxRip
 
             // Put default text in status bar
             statBarText.Text = "Ready";
+
+            // Start a New Session
+            // GfxRip variables are now initialized
+            GRActive = true;
+
+            gfxRipCfgName = "undefined";
+
+            gfxRip.NewConfiguration();
+
+            UpdateStatusBar();
         }
 
         public void ExitProgram()
@@ -288,6 +298,13 @@ namespace ModernGfxRip
                 if (gfxRip != null) 
                 { 
                     gfxRip.Config.Offset = value;
+
+                    // Update the screen
+                    gfxRip.isDirty = true;
+                    gfxRip.Refresh();
+
+                    // Update Status Bar
+                    UpdateStatusBar();
                 }
             }
         }
@@ -307,6 +324,13 @@ namespace ModernGfxRip
                 if (gfxRip != null)
                 {
                     gfxRip.Config.Skip = value;
+
+                    // Update the screen
+                    gfxRip.isDirty = true;
+                    gfxRip.Refresh();
+
+                    // Update Status Bar
+                    UpdateStatusBar();
                 }
             }
         }

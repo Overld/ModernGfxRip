@@ -182,8 +182,8 @@ namespace ModernGfxRip
             public string DisplayValues()
             {
                 // Calculate Number of Screen Zones there are
-                NumX = ScreenWidth / (BlXSize * 8 + Hole);
-                NumY = ScreenHeight / (BlYSize + Hole);
+                NumX = (ScreenWidth - 1) / (BlXSize * 8 + Hole);
+                NumY = (ScreenHeight - 1) / (BlYSize + Hole);
                 if (NumX <= 0) NumX = 1;
                 if (NumY <= 0) NumY = 1;
 
