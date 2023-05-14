@@ -33,8 +33,8 @@
         <KeyBinding Key="W" Modifiers="Shift" Command="{Binding ImageSizeCommand}" CommandParameter="+Y8"/>
         <KeyBinding Key="S" Modifiers="Shift" Command="{Binding ImageSizeCommand}" CommandParameter="-Y8"/>
 
-        <KeyBinding Key="Left" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="-X8"/>
-        <KeyBinding Key="Right" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="+X8"/>
+        <KeyBinding Key="Left" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="-Off"/>
+        <KeyBinding Key="Right" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="+Off"/>
         <KeyBinding Key="Left" Modifiers="Shift" Command="{Binding PictureSizeCommand}" CommandParameter="-Pic"/>
         <KeyBinding Key="Right" Modifiers="Shift" Command="{Binding PictureSizeCommand}" CommandParameter="+Pic"/>
         <KeyBinding Key="Up" Modifiers="" Command="{Binding PictureSizeCommand}" CommandParameter="-Y1"/>
@@ -128,8 +128,8 @@
                 <Button Command="{Binding ImageSizeCommand}" CommandParameter="-Y8" Content="-YSize8" ToolTip="-Y Size by 8 pixels  (Shift+S)" ToolBar.OverflowMode="Always" />
             </ToolBar>
             <ToolBar>
-                <Button Command="{Binding PictureSizeCommand}" CommandParameter="-X8" Content="-XPic8" ToolTip="Picture Left by 8 pixels  (LEFT)" ToolBar.OverflowMode="Never" />
-                <Button Command="{Binding PictureSizeCommand}" CommandParameter="+X8" Content="+XPic8" ToolTip="Picture Right by 8 pixels  (RIGHT)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="-Off" Content="-Offset" ToolTip="Picture Left by 8 pixels  (LEFT)" ToolBar.OverflowMode="Never" />
+                <Button Command="{Binding PictureSizeCommand}" CommandParameter="+Off" Content="+Offset" ToolTip="Picture Right by 8 pixels  (RIGHT)" ToolBar.OverflowMode="Never" />
                 <Button Command="{Binding PictureSizeCommand}" CommandParameter="-Pic" Content="PrevPic" ToolTip="Previous Picture (Offset by X Size * Y Size)  (Shift+LEFT)" ToolBar.OverflowMode="Always" />
                 <Button Command="{Binding PictureSizeCommand}" CommandParameter="+Pic" Content="NextPic" ToolTip="Next Picture (Offset by X Size * Y Size)  (Shift+RIGHT)" ToolBar.OverflowMode="Always" />
                 <Separator/>

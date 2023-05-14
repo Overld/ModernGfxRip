@@ -96,6 +96,7 @@ namespace ModernGfxRip
             public const int Hole = 2;
 
             public BitplaneModeType Mode { get; set; } = BitplaneModeType.AMIGA_STANDARD;
+            public int PixelsPerByte { get; set; } = 8;
             public long Offset { get; set; } = 0;
             public int BlXSize { get; set; } = 320 / 8;
             public int BlYSize { get; set; } = 200;
@@ -120,6 +121,7 @@ namespace ModernGfxRip
             public GfxRipConfig(GfxRipConfig config)
             {
                 Mode = config.Mode;
+                PixelsPerByte = config.PixelsPerByte;
                 Offset = config.Offset;
                 BlXSize = config.BlXSize;
                 BlYSize = config.BlYSize;
@@ -143,8 +145,9 @@ namespace ModernGfxRip
             public GfxRipConfig()
             {
                 Mode = BitplaneModeType.AMIGA_STANDARD;
+                PixelsPerByte = 8;
                 Offset = 0;
-                BlXSize = 320 / 8;
+                BlXSize = 320 / PixelsPerByte;
                 BlYSize = 200;
                 Bits = 1;
                 NumX = 1;
@@ -182,13 +185,13 @@ namespace ModernGfxRip
             public string DisplayValues()
             {
                 // Calculate Number of Screen Zones there are
-                NumX = (ScreenWidth - 1) / (BlXSize * 8 + Hole);
+                NumX = (ScreenWidth - 1) / (BlXSize * PixelsPerByte + Hole);
                 NumY = (ScreenHeight - 1) / (BlYSize + Hole);
                 if (NumX <= 0) NumX = 1;
                 if (NumY <= 0) NumY = 1;
 
                 string result = string.Format("Off:{0,7:D} Siz: X:{1,4:D} Y:{2,4:D} Bit:{3:D} Vis.X:{4,2:D} Y:{5,2:D} Pal{6}:{7,7:D} Mode:{8,2} Skip-{9}:{10,4:D} Order:{11} {12:D}{13:D}{14:D}{15:D}{16:D}{17:D}{18:D}{19:D}",
-                    Offset, BlXSize * 8, BlYSize, Bits, NumX, NumY, ConvertPaletteModeEnum(PalSearchMode), PaletteFound, ConvertModeEnum(Mode), (SkipMode == 0) ? "P" : "B", Skip, (Reverse) ? "R" : "N",
+                    Offset, BlXSize * PixelsPerByte, BlYSize, Bits, NumX, NumY, ConvertPaletteModeEnum(PalSearchMode), PaletteFound, ConvertModeEnum(Mode), (SkipMode == 0) ? "P" : "B", Skip, (Reverse) ? "R" : "N",
                     BplOrder[7], BplOrder[6], BplOrder[5], BplOrder[4], BplOrder[3], BplOrder[2], BplOrder[1], BplOrder[0]);
 
                 return result;
@@ -782,13 +785,13 @@ namespace ModernGfxRip
 
             switch (command)
             {
-                case "-X8":
+                case "-Off":
                     if (Config.Offset > 0)
                     {
                         Config.Offset--;
                     }
                     break;
-                case "+X8":
+                case "+Off":
                     if (Config.Offset < FileSize)
                     {
                         Config.Offset++;
@@ -931,16 +934,38 @@ namespace ModernGfxRip
                     Config.Colors[1] = System.Windows.Media.Color.FromRgb(0x04, 0xFE, 0x04);
                     // Set Color 2 to Violet
                     Config.Colors[2] = System.Windows.Media.Color.FromRgb(0xFC, 0x02, 0xFC);
-                    // Set Color 3 to Orange
-                    Config.Colors[3] = System.Windows.Media.Color.FromRgb(0xFC, 0x82, 0x04);
-                    // Set Color 4 to Blue
-                    Config.Colors[4] = System.Windows.Media.Color.FromRgb(0x04, 0x02, 0xFC);
-                    // Set Color 5 to White
-                    Config.Colors[5] = System.Windows.Media.Color.FromRgb(0xFC, 0xFE, 0xFC);
+                    // Set Color 3 to White
+                    Config.Colors[3] = System.Windows.Media.Color.FromRgb(0xFC, 0xFE, 0xFC);
+                    // Set Color 4 to Black
+                    Config.Colors[4] = System.Windows.Media.Color.FromRgb(0x04, 0x02, 0x04);
+                    // Set Color 5 to Orange
+                    Config.Colors[5] = System.Windows.Media.Color.FromRgb(0xFC, 0x82, 0x04);
+                    // Set Color 6 to Blue
+                    Config.Colors[6] = System.Windows.Media.Color.FromRgb(0x04, 0x02, 0xFC);
+                    // Set Color 7 to White
+                    Config.Colors[7] = System.Windows.Media.Color.FromRgb(0xFC, 0xFE, 0xFC);
                     BitmapPalette = new BitmapPalette(Config.Colors);
+
+                    // Also update Bit Depth to Match the Apple Colors
+                    Config.Bits = 2;
+
+                    // Update Width and Height to match Apple Hi-Res Screen
+                    Config.BlXSize = 40;
+                    Config.BlYSize = 192;
+
+                    // Set Mode to Apple II
+                    Config.Mode = BitplaneModeType.APPLE_II_STANDARD;
+
+                    // 7 Pixels per Byte for Apple II
+                    Config.PixelsPerByte = 7;
 
                     // Recreate Writeable Bitmap with new color Palette
                     SetupBitmapVariables();
+
+                    isDirty = true;
+
+                    // Redraw the screen
+                    Refresh();
                     break;
                 default:
                     // Unknown parameter passed so just abort
@@ -967,6 +992,16 @@ namespace ModernGfxRip
                     if (Config.Mode == BitplaneModeType.LAST_MODE)
                     {
                         Config.Mode = 0;
+                    }
+
+                    // Set the Pixels Per Byte when Mode is changed
+                    if (Config.Mode == BitplaneModeType.APPLE_II_STANDARD)
+                    {
+                        Config.PixelsPerByte = 7;
+                    }
+                    else
+                    {
+                        Config.PixelsPerByte = 8;
                     }
                     break;
                 case "+BP0":
@@ -1172,7 +1207,13 @@ namespace ModernGfxRip
 
         byte GetPixelColor(long pos, int x, int y)
         {
-            bool[] bit = new bool[8];
+            // If Apple II use different 
+            if (Config.Mode == BitplaneModeType.APPLE_II_STANDARD)
+            {
+                return AppleGetPixelColor(pos, x, y);
+            }
+
+            bool[] bit = new bool[Config.PixelsPerByte];
             long p;
             int byte1;
             int bit1;
@@ -1181,7 +1222,7 @@ namespace ModernGfxRip
 
             int i;
 
-            for (i = 0; i < 8; i++)
+            for (i = 0; i < Config.PixelsPerByte; i++)
             {
                 bit[i] = false;
             }
@@ -1200,48 +1241,43 @@ namespace ModernGfxRip
                     default:
                         // Amiga type bitplanes
                         p = pos + (Config.BlXSize * Config.BlYSize) * (i);
-                        nn = x + (y * (Config.BlXSize * 8));
+                        nn = x + (y * (Config.BlXSize * Config.PixelsPerByte));
                         break;
                     case BitplaneModeType.ATARI_ST_STANDARD:
                         // ST Type bitplanes
                         p = pos + Config.BlXSize * (i);
-                        nn = x + (Config.Bits * y * (Config.BlXSize * 8));
+                        nn = x + (Config.Bits * y * (Config.BlXSize * Config.PixelsPerByte));
                         break;
                     case BitplaneModeType.AMIGA_SPRITE:
-                        // mode == 2	// Amiga Sprite !!!
+                        // Amiga Sprite !!!
                         if (i < 2)
                         {
                             p = pos + Config.BlXSize * (i);
-                            nn = x + ((2 * y) * (Config.BlXSize * 8));
+                            nn = x + ((2 * y) * (Config.BlXSize * Config.PixelsPerByte));
                         }
                         else
                         {
                             p = pos + Config.BlXSize * (i - 2) + (Config.BlYSize * Config.BlXSize) * 2;
-                            nn = x + ((2 * y) * (Config.BlXSize * 8));
+                            nn = x + ((2 * y) * (Config.BlXSize * Config.PixelsPerByte));
                         }
                         break;
                     case BitplaneModeType.CPC_DOUBLE_STANDARD:
                         // mode == 3 // CPC gfx for Bat-Man / HoH
-                        p = pos + (x / 8) + i;
-                        nn = x + ((2 * y) * (Config.BlXSize * 8));
+                        p = pos + (x / Config.PixelsPerByte) + i;
+                        nn = x + ((2 * y) * (Config.BlXSize * Config.PixelsPerByte));
                         break;
                     case BitplaneModeType.CPC_SINGLE_STANDARD:
                         //  mode ==4 // CPC gfx for Ultimate games
                         p = pos + (x / 4) + (Config.BlXSize * y * 2);
                         nn = (i * 4) + x % 4;
                         break;
-                    case BitplaneModeType.APPLE_II_STANDARD:
-                        // Apple II Colors
-                        p = pos;
-                        nn = 0;
-                        break;
                 }
                 if (Config.SkipMode == 1)
                 {
                     p += Config.Skip * i;
                 }
-                byte1 = nn / 8;
-                bit1 = 7 - (nn % 8);
+                byte1 = nn / Config.PixelsPerByte;
+                bit1 = 7 - (nn % Config.PixelsPerByte);
                 if (Config.Reverse)
                 {
                     bitn = (Config.Bits - i) - 1;
@@ -1269,22 +1305,220 @@ namespace ModernGfxRip
                 }
             }
 
-            byte col = 0;
+            byte color = 0;
 
             for (i = 0; i < Config.Bits; i++)
             {
                 if (bit[Config.BplOrder[i]])
                 {
-                    col += (byte) ((1 << i) & 0xFF);
+                    color += (byte) ((1 << i) & 0xFF);
                 }
             }
 
-            return col;
+            return color;
+        }
+
+        byte AppleGetPixelColor(long pos, int x, int y)
+        {
+            byte color = 0;
+
+            // Multiply the modulo of the vertical offset
+            const long verticalOffset = 0x0400;
+
+            // Convert Vertical to 24 possible positions (same as Low-res Graphic Mode)
+            long[] vertPositions = { 0x0000, 0x0080, 0x0100, 0x0180, 0x0200, 0x0280, 0x0300, 0x0380,
+                                     0x0028, 0x00A8, 0x0128, 0x01A8, 0x0228, 0x02A8, 0x0328, 0x03A8,
+                                     0x0050, 0x00D0, 0x0150, 0x01D0, 0x0250, 0x02D0, 0x0350, 0x03D0};
+            long p;
+            int byte1, byte2;
+            int bit1, bit2;
+            int nn;
+            int pixelColor = 0;
+
+            // Make sure there is data to analyze
+            if (BinaryData == null)
+            {
+                return 0;
+            }
+
+            if ((x >= 0) && (x < 280) && (y >= 0) && (y < 192))
+            {
+                int mainY, subY;
+
+                mainY = y / 8;
+                subY = y % 8;
+
+                // Color is based on two bits.  Even byte goes 01-01-01-0.  Off byte goes 1-01-01-01
+                // 0 bit is always Black.  1 Bit is a color or white if there are two bits next to each other.
+
+                // Determine the memory offset for Y
+                p = pos + vertPositions[mainY] + (subY * verticalOffset);
+                nn = x;
+
+                byte1 = nn / Config.PixelsPerByte;
+                bit1 = (nn % Config.PixelsPerByte);
+
+                // Test two edge cases first
+                // 1. If even byte, if Bit 6, then test Bit 0 on next byte
+                // 2. if odd byte, if Bit 0, then text Bit 6 on previous byte
+                // 3. All other cases can be checked within the same byte
+                if (((byte1 & 1) == 0) && (bit1 == 6))
+                {
+                    // Test Case 1 - Even byte, so read odd byte to get bit for color purposes
+                    byte2 = byte1 + 1;
+                    bit2 = 0;
+                    pixelColor = 2;
+                }
+                else if (((byte1 & 1) == 1)  && (bit1 == 0))
+                {
+                    // Test Case 2 - Odd Byte, so read previous byte to get 8th bit for color purposes
+                    byte2 = byte1 - 1;
+                    bit2 = 6;
+                    pixelColor = 1;
+                }
+                else
+                {
+                    // Test Case 3
+                    byte2 = byte1;
+
+                    // Byte Pattern 01-01-01-0
+                    // Test for Even Byte
+                    if ((byte1 & 1) == 0)
+                    {
+                        // Even Byte
+                        switch (bit1)
+                        {
+                            case 0:
+                                bit2 = 1;
+                                pixelColor = 2;
+                                break;
+                            case 1:
+                                bit2 = 0;
+                                pixelColor = 1;
+                                break;
+                            case 2:
+                                bit2 = 3;
+                                pixelColor = 2;
+                                break;
+                            case 3:
+                                bit2 = 2;
+                                pixelColor = 1;
+                                break;
+                            case 4:
+                                bit2 = 5;
+                                pixelColor = 2;
+                                break;
+                            case 5:
+                                bit2 = 4;
+                                pixelColor = 1;
+                                break;
+                            case 6:
+                            default:
+                                // Not needed since covered with earlier if statement
+                                bit2 = 0;
+                                pixelColor = 2;
+                                break;
+                        }
+                    }
+                    else 
+                    {
+                        // Byte Pattern 1-01-01-01
+                        // Odd Byte
+                        switch (bit1)
+                        {
+                            case 0:
+                            default:
+                                // Not needed since covered with earlier if statement
+                                bit2 = 6;
+                                pixelColor = 1;
+                                break;
+
+                            case 1:
+                                bit2 = 2;
+                                pixelColor = 2;
+                                break;
+                            case 2:
+                                bit2 = 1;
+                                pixelColor = 1;
+                                break;
+                            case 3:
+                                bit2 = 4;
+                                pixelColor = 2;
+                                break;
+                            case 4:
+                                bit2 = 3;
+                                pixelColor = 1;
+                                break;
+                            case 5:
+                                bit2 = 6;
+                                pixelColor = 2;
+                                break;
+                            case 6:
+                                bit2 = 5;
+                                pixelColor = 1;
+                                break;
+                        }
+                    }
+                }
+
+
+                // Check to see if at end of Memory to view.
+                if ((p + byte1 < FileSize) && (p + byte2 < FileSize))
+                {
+                    int data1 = BinaryData[p + byte1];
+                    int data2 = BinaryData[p + byte2] & (1 << bit2);
+
+                    int colorMode;  // 0 for Low Color, 4 for High Color
+
+                    if ((data1 & 0x80) == 0)
+                    {
+                        // 0 for Low Color
+                        colorMode = 0;
+                    }
+                    else
+                    {
+                        // 4 for High Color
+                        colorMode = 4;
+                    }
+
+                    if ((data1 & (1 << bit1)) == 0)
+                    {
+                        // Color is black so need to check other pixel
+                        color = (byte) colorMode;
+                    }
+                    else
+                    {
+                        // Bit is set, so need to determine if a color or white
+                        if ((data2 & (1 << bit2)) != 0)
+                        {
+                            // Bit is set so color is white
+                            color = (byte)(colorMode + 3);
+                        }
+                        else 
+                        {
+                            // Other bit is 0 so now need to determine appropriate color
+                            color = (byte)(colorMode + pixelColor);
+                        }
+                    }
+                }
+                else
+                {
+                    // Out of range do don't do anything
+                    color = 253;
+                }
+
+                return color;
+            }
+            else
+            {
+                // Out of graphic range so show blank
+                return 253;
+            }
         }
 
         void DrawCustomBitmap(long pos, int xx, int yy)
         {
-            for (int x = 0; x < Config.BlXSize * 8; x++)
+            for (int x = 0; x < Config.BlXSize * Config.PixelsPerByte; x++)
             {
                 for (int y = 0; y < Config.BlYSize; y++)
                 {
@@ -1306,7 +1540,7 @@ namespace ModernGfxRip
                 {
                     for (int x = 0; x < Config.NumX; x++)
                     {
-                        xx = x * (Config.BlXSize * 8 + GfxRipConfig.Hole);
+                        xx = x * (Config.BlXSize * Config.PixelsPerByte + GfxRipConfig.Hole);
                         yy = y * (Config.BlYSize + GfxRipConfig.Hole);
 
                         DrawCustomBitmap(pos, xx, yy);
@@ -1336,9 +1570,9 @@ namespace ModernGfxRip
                 int zoomBlXSize, zoomBlYSize;
 
 
-                if ((Config.BlXSize * 8 * 2 + 4) > GfxRipConfig.ScreenWidth / 2) 
+                if ((Config.BlXSize * Config.PixelsPerByte * 2 + 4) > GfxRipConfig.ScreenWidth / 2) 
                 {
-                    zoomBlXSize = ((GfxRipConfig.ScreenWidth / 2) - 4) / (8 * 2);
+                    zoomBlXSize = ((GfxRipConfig.ScreenWidth / 2) - 4) / (Config.PixelsPerByte * 2);
                 }
                 else
                 {
@@ -1354,14 +1588,15 @@ namespace ModernGfxRip
                     zoomBlYSize = Config.BlYSize;
                 }
 
-                zoomWidth = (zoomBlXSize * 8) * 2 + 4;
+                zoomWidth = (zoomBlXSize * Config.PixelsPerByte) * 2 + 4;
                 zoomHeight = (zoomBlYSize * 2) + 4;
 
                 xx = GfxRipConfig.ScreenWidth - zoomWidth;
                 yy = GfxRipConfig.ScreenHeight - zoomHeight;
 
                 // Draw Zoomed In Graphics of Picture located in first area
-                StretchBlit(0, 0, zoomBlXSize * 8, zoomBlYSize, xx + 2, yy + 2, zoomBlXSize * 8 * 2, zoomBlYSize * 2);
+                StretchBlit(0, 0, zoomBlXSize * Config.PixelsPerByte, zoomBlYSize, xx + 2, yy + 2,
+                            zoomBlXSize * Config.PixelsPerByte * 2, zoomBlYSize * 2);
 
                 // Draw a Box around the Zoom window in Black
                 DrawRect(xx, yy, GfxRipConfig.ScreenWidth - 1, GfxRipConfig.ScreenHeight - 1, 1);
