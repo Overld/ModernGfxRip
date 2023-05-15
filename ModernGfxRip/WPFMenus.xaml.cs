@@ -202,6 +202,16 @@ namespace ModernGfxRip
                 gfxRip.SaveConfiguration(gfxRipCfgName);
             }
         }
+        private void CommandBindingCopy_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = BinLoaded;
+        }
+
+        private void CommandBindingCopy_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            // Copy the first square to the copy buffer
+            gfxRip.CopyToClipboard();
+        }
 
         public void ModifyImageSize(string? command)
         {

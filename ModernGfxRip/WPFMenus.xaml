@@ -14,6 +14,7 @@
         <CommandBinding Command="Open" CanExecute="CommandBindingOpen_CanExecute" Executed="CommandBindingOpen_Executed"/>
         <CommandBinding Command="Save" CanExecute="CommandBindingSave_CanExecute" Executed="CommandBindingSave_Executed"/>
         <CommandBinding Command="SaveAs" CanExecute="CommandBindingSaveAs_CanExecute" Executed="CommandBindingSaveAs_Executed"/>
+        <CommandBinding Command="Copy" CanExecute="CommandBindingCopy_CanExecute" Executed="CommandBindingCopy_Executed"/>
     </Window.CommandBindings>
     <Window.InputBindings>
         <!--  Key Equivalents for Menu Options  -->

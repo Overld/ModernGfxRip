@@ -21,6 +21,7 @@ using System.Printing.IndexedProperties;
 using System.Data.Common;
 using System.Windows.Media.Media3D;
 using System.Numerics;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ModernGfxRip
 {
@@ -264,7 +265,7 @@ namespace ModernGfxRip
         public bool isDirty = false;
 
         // Image that Writable Bitmap is copied into
-        private Image? graphicBuffer;
+        private System.Windows.Controls.Image? graphicBuffer;
 
         // Width of the Image
         private int graphicWidth;
@@ -296,7 +297,7 @@ namespace ModernGfxRip
             BitmapPalette = new BitmapPalette(Config.Colors);
         }
 
-        public void SetupDrawingBitmap(Image graphics, int width, int height)
+        public void SetupDrawingBitmap(System.Windows.Controls.Image graphics, int width, int height)
         {
             graphicBuffer = graphics;
             graphicWidth = width;
@@ -322,6 +323,24 @@ namespace ModernGfxRip
             }
 
             Pixels = new byte[WBitMap.PixelHeight * WBitMap.PixelWidth * WBitMap.Format.BitsPerPixel / 8];
+        }
+
+        public void CopyToClipboard()
+        {
+            if (graphicBuffer != null)
+            {
+                double width = graphicBuffer.ActualWidth;
+                double height = graphicBuffer.ActualHeight;
+                RenderTargetBitmap bmpCopied = new RenderTargetBitmap((int)Math.Round(width), (int)Math.Round(height), 96, 96, PixelFormats.Default);
+                DrawingVisual dv = new DrawingVisual();
+                using (DrawingContext dc = dv.RenderOpen())
+                {
+                    VisualBrush vb = new VisualBrush(graphicBuffer);
+                    dc.DrawRectangle(vb, null, new System.Windows.Rect(new System.Windows.Point(), new System.Windows.Size(width, height)));
+                }
+                bmpCopied.Render(dv);
+                Clipboard.SetImage(bmpCopied);
+            }
         }
 
         public bool ReadBinaryData(string binaryFileName)
