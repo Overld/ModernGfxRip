@@ -353,9 +353,9 @@ namespace ModernGfxRip
                 // File.ReadAllBytes opens a filestream and then ensures it is closed
                 BinaryData = File.ReadAllBytes(binaryFileName);
             }
-            catch (IOException e)
+            catch (IOException)
             {
-                throw e;
+                throw;
             }
 
             // Initialize Variables based on new data loaded
@@ -412,9 +412,9 @@ namespace ModernGfxRip
                 // Redraw the screen
                 Refresh();
             }
-            catch (IOException e)
+            catch (IOException)
             {
-                throw e;
+                throw;
             }
 
             return result;
@@ -440,9 +440,9 @@ namespace ModernGfxRip
 
                 result = true;
             }
-            catch (IOException e)
+            catch (IOException)
             {
-                throw e;
+                throw;
             }
 
             return result;
