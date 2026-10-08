@@ -106,10 +106,8 @@ namespace ModernGfxRip
             // Read the BMP file into Memory
             try
             {
-                FileStream fs = new(fileName, FileMode.Open);
-                fileData = new byte[fs.Length];
-                fs.Read(fileData, 0, fileData.Length);
-                fs.Close();
+                // Use File.ReadAllBytes to avoid inexact-read analyzer warnings
+                fileData = File.ReadAllBytes(fileName);
 
                 using var fileStreamReader = new StreamReader(fileName, true);
                 Encoding currentEncoding = fileStreamReader.CurrentEncoding;
@@ -125,9 +123,9 @@ namespace ModernGfxRip
 
                 // File was loaded
             }
-            catch (IOException e)
+            catch (IOException)
             {
-                throw e;
+                throw;
             }
 
             if (fileData != null)

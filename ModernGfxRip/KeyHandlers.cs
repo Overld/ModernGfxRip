@@ -124,9 +124,9 @@ namespace ModernGfxRip
                     {
                         menu.ConfigOffset = Int32.Parse(dialog.txtNumber.Text);
                     }
-                    catch (FormatException e)
+                    catch (FormatException)
                     {
-                        throw e;
+                        throw;
                     }
                 }
             }
@@ -167,9 +167,9 @@ namespace ModernGfxRip
                     {
                         menu.ConfigSkip = Int32.Parse(dialog.txtNumber.Text);
                     }
-                    catch (FormatException e)
+                    catch (FormatException)
                     {
-                        throw e;
+                        throw;
                     }
                 }
             }
@@ -349,9 +349,9 @@ namespace ModernGfxRip
                         // Have BMP Info so now read palette information
                         menu.GetBMPInfo(ref objDataInfo);
                     }
-                    catch (IOException e)
+                    catch (IOException)
                     {
-                        throw e;
+                        throw;
                     }
                 }
             }
